@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+*.db
+.gradle/
+.gradle
+build/
+.cache/
+data/*.db
+uploads/*
+!uploads/.gitkeep
+.DS_Store
+*.log
+*.tmp

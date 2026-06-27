@@ -1,0 +1,21 @@
+runtime: node:20
+name: alkhalel-academy-backend
+
+env:
+  - key: NODE_ENV
+    value: production
+  - key: PORT
+    value: "3000"
+  - key: JWT_SECRET
+    generateValue: true
+  - key: JWT_EXPIRES_IN
+    value: 7d
+  - key: DATABASE_URL
+    sync: false
+  - key: FRONTEND_URL
+    sync: false
+
+buildCommand: npm ci --omit=dev
+startCommand: node src/index.js
+
+healthCheckPath: /api/health
