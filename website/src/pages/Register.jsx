@@ -1,46 +1,48 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import api from '../api';
 import SelectField from '../components/SelectField';
 import { COUNTRIES, normalizePhone, buildFullPhone, extractLocalDigits } from '../utils/phone';
 
+
 const STAGES = [
   'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع',
   'العاشر', 'الحادي عشر', 'الثانوية', 'جامعي', 'متخرج', 'لا يدرس',
 ];
 
-const STATUS_OPTIONS = [
-  { value: '', label: '-- اختر --' },
-  { value: 'على قيد الحياة', label: 'على قيد الحياة' },
-  { value: 'متوفى', label: 'متوفى' },
-  { value: 'غير ذلك', label: 'غير ذلك' },
-];
-
 const initialForm = {
   fullName: '', fatherName: '', motherName: '',
-  fatherStatus: '', motherStatus: '',
-  fatherOccupation: '', motherOccupation: '',
-  studentCountry: 'SY', fatherCountry: 'SY', motherCountry: 'SY',
-  studentPhone: '', fatherPhone: '', motherPhone: '',
-  primaryContact: 'father',
   birthYear: '', stage: '',
+  studentCountry: 'SY', studentPhone: '',
+  currentJob: '', nationality: '',
 };
+
+
 
 function CameraCapture({ onCapture, onClose }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [facing, setFacing] = useState('user');
   const [captured, setCaptured] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
+
+  useEffect(() => {
+    setCameraReady(false);
+    startCamera(facing);
+    return () => stopCamera();
+  }, [facing]);
 
   function startCamera(f) {
     stopCamera();
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: f, width: 640, height: 480 } })
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: f, width: 640, height: 480 } })
       .then((s) => {
         streamRef.current = s;
         if (videoRef.current) videoRef.current.srcObject = s;
+        setCameraReady(true);
       })
-      .catch(() => {});
+      .catch((err) => { console.error('Camera error:', err); });
   }
 
   function stopCamera() {
@@ -50,7 +52,7 @@ function CameraCapture({ onCapture, onClose }) {
     }
   }
 
-  function capture() {
+  function performCapture() {
     const v = videoRef.current;
     if (!v) return;
     const c = document.createElement('canvas');
@@ -65,6 +67,7 @@ function CameraCapture({ onCapture, onClose }) {
 
   function retake() {
     setCaptured(null);
+    setCameraReady(false);
     startCamera(facing);
   }
 
@@ -75,31 +78,82 @@ function CameraCapture({ onCapture, onClose }) {
     onClose();
   }
 
+  function toggleFacing() {
+    setFacing((f) => (f === 'user' ? 'environment' : 'user'));
+  }
+
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
       <div className="relative w-full max-w-md">
         {!captured ? (
           <>
-            <video ref={videoRef} autoPlay playsInline className="w-full rounded-2xl bg-black mirror" style={{ transform: facing === 'user' ? 'scaleX(-1)' : 'none' }} />
-            <div className="flex justify-center gap-4 mt-4">
-              <button type="button" onClick={() => setFacing((f) => f === 'user' ? 'environment' : 'user')} className="btn-secondary !px-5">
-                <svg className="w-5 h-5 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="relative rounded-2xl overflow-hidden bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full aspect-[4/3] object-cover"
+                style={{ transform: facing === 'user' ? 'scaleX(-1)' : 'none' }}
+              />
+              {/* Static 3×4 grid + head contour guide */}
+              <div
+                className="absolute inset-0 pointer-events-none select-none"
+                style={{ transform: facing === 'user' ? 'scaleX(-1)' : 'none' }}
+              >
+                {cameraOverlay}
+              </div>
+              <button
+                type="button"
+                onClick={toggleFacing}
+                className="absolute bottom-3 left-3 w-11 h-11 rounded-full bg-black/60 border border-white/20 flex items-center justify-center hover:bg-black/80 transition-colors z-10"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                تبديل الكاميرا
               </button>
-              <button type="button" onClick={capture} className="w-16 h-16 rounded-full bg-white/20 hover:bg-white/30 border-4 border-white transition-all flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-white" />
+            </div>
+
+            <p className="text-center mt-3 text-sm text-blue-300/80 font-bold">
+              يرجى وضع الرأس في الإطار ثم التقاط الصورة
+            </p>
+
+            <div className="flex flex-col items-center mt-4">
+              <span className={`text-xs font-bold mb-2 transition-colors duration-300 ${cameraReady ? 'text-blue-400' : 'text-gray-500'}`}>
+                التقاط الصورة
+              </span>
+              <button
+                type="button"
+                disabled={!cameraReady}
+                onClick={performCapture}
+                className={`w-16 h-16 rounded-full transition-all duration-300 flex items-center justify-center ${
+                  cameraReady
+                    ? 'bg-blue-500 hover:bg-blue-400 shadow-lg shadow-blue-500/40 cursor-pointer'
+                    : 'bg-gray-600/30 cursor-not-allowed'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-full transition-colors ${cameraReady ? 'bg-white' : 'bg-gray-500'}`} />
               </button>
-              <button type="button" onClick={onClose} className="btn-secondary !px-5">إلغاء</button>
+            </div>
+
+            <div className="flex justify-center mt-3">
+              <button type="button" onClick={onClose} className="text-sm text-gray-400 hover:text-white transition-colors">إلغاء</button>
             </div>
           </>
         ) : (
           <>
             <img src={captured} alt="ملتقطة" className="w-full rounded-2xl border-2 border-gold-500/30" />
-            <div className="flex justify-center gap-4 mt-4">
-              <button type="button" onClick={confirm} className="btn-primary !px-6">تأكيد الصورة</button>
-              <button type="button" onClick={retake} className="btn-secondary !px-6">إعادة التصوير</button>
+            <div className="mt-4 text-center">
+              <h3 className="text-sm font-bold text-gold-400 mb-3">مراجعة الصورة</h3>
+              <div className="flex justify-center gap-3">
+                <button type="button" onClick={confirm} className="btn-primary !px-6 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                  تأكيد الصورة
+                </button>
+                <button type="button" onClick={retake} className="btn-secondary !px-6 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  إعادة التصوير
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -107,6 +161,23 @@ function CameraCapture({ onCapture, onClose }) {
     </div>
   );
 }
+
+const cameraOverlay = (
+  <svg viewBox="0 0 640 480" className="w-full h-full">
+    <g stroke="#60a5fa" strokeWidth="1" opacity="0.20" strokeDasharray="4 4">
+      <line x1="213.33" y1="0" x2="213.33" y2="480" />
+      <line x1="426.67" y1="0" x2="426.67" y2="480" />
+      <line x1="0" y1="120" x2="640" y2="120" />
+      <line x1="0" y1="240" x2="640" y2="240" />
+      <line x1="0" y1="360" x2="640" y2="360" />
+    </g>
+    <g stroke="#60a5fa" strokeWidth="2" fill="none" opacity="0.30" strokeLinecap="round">
+      <ellipse cx="320" cy="165" rx="84" ry="106" strokeDasharray="6 4" />
+      <path d="M 186 318 C 186 348 166 378 100 408 L 100 480" />
+      <path d="M 454 318 C 454 348 474 378 540 408 L 540 480" />
+    </g>
+  </svg>
+);
 
 function CountryPhoneRow({ label, required, country, digits, onCountryChange, onDigitsChange, error, showOptional }) {
   const selected = COUNTRIES.find((c) => c.code === country) || COUNTRIES[0];
@@ -187,28 +258,12 @@ export default function Register() {
         else if (v.trim().length < 3) errs[name] = 'يجب أن يكون على الأقل 3 أحرف';
         else delete errs[name];
         break;
-      case 'fatherStatus':
-      case 'motherStatus':
-        if (!v) errs[name] = 'يرجى اختيار الحالة';
-        else delete errs[name];
-        break;
-      case 'fatherOccupation':
-      case 'motherOccupation':
-        if (!v || !v.trim()) errs[name] = 'هذا الحقل مطلوب';
-        else delete errs[name];
-        break;
-      case 'fatherPhone':
-      case 'motherPhone':
       case 'studentPhone': {
-        if (name === 'studentPhone' && (!v || !v.trim())) {
-          delete errs[name];
-          break;
-        }
         if (!v || !v.trim()) {
           errs[name] = 'هذا الحقل مطلوب';
           break;
         }
-        const cCode = form[name === 'fatherPhone' ? 'fatherCountry' : name === 'motherPhone' ? 'motherCountry' : 'studentCountry'];
+        const cCode = form.studentCountry;
         const selected = COUNTRIES.find((c) => c.code === cCode) || COUNTRIES[0];
         const normalized = normalizePhone(v);
         if (!normalized) {
@@ -240,6 +295,14 @@ export default function Register() {
         if (!v) errs[name] = 'يرجى اختيار المرحلة';
         else delete errs[name];
         break;
+      case 'currentJob':
+        if (!v || !v.trim()) errs[name] = 'هذا الحقل مطلوب';
+        else delete errs[name];
+        break;
+      case 'nationality':
+        if (!v) errs[name] = 'يرجى اختيار الجنسية';
+        else delete errs[name];
+        break;
       default:
         delete errs[name];
     }
@@ -249,23 +312,12 @@ export default function Register() {
   }
 
   function validateAll() {
-    const fields = ['fullName', 'fatherName', 'motherName', 'fatherStatus', 'motherStatus',
-      'fatherOccupation', 'motherOccupation', 'fatherPhone', 'motherPhone', 'birthYear', 'stage'];
+    const fields = ['fullName', 'fatherName', 'motherName', 'birthYear', 'stage', 'currentJob', 'nationality', 'studentPhone'];
     let valid = true;
     const newTouched = {};
     fields.forEach((f) => { newTouched[f] = true; });
     setTouched(newTouched);
     fields.forEach((f) => { if (!validateField(f)) valid = false; });
-
-    const fatherP = form.fatherPhone;
-    const motherP = form.motherPhone;
-    const studentP = form.studentPhone;
-    if ((!fatherP || !fatherP.trim()) && (!motherP || !motherP.trim()) && (!studentP || !studentP.trim())) {
-      setErrors((prev) => ({ ...prev, _phone: 'يجب إدخال رقم تواصل واحد على الأقل (الأب، الأم، أو الطالب)' }));
-      valid = false;
-    } else {
-      setErrors((prev) => { const { _phone, ...rest } = prev; return rest; });
-    }
 
     if (!photo) {
       setErrors((prev) => ({ ...prev, photo: 'يرجى التقاط صورة للطالب' }));
@@ -289,16 +341,15 @@ export default function Register() {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => {
-        if (k === 'studentCountry' || k === 'fatherCountry' || k === 'motherCountry') return;
+        if (k === 'studentCountry') return;
         if (k === 'studentPhone') fd.append(k, buildFullPhone(form.studentCountry, v));
-        else if (k === 'fatherPhone') fd.append(k, buildFullPhone(form.fatherCountry, v));
-        else if (k === 'motherPhone') fd.append(k, buildFullPhone(form.motherCountry, v));
         else fd.append(k, v);
       });
       if (photo) fd.append('photo', photo);
       const res = await api.post('/auth/register', fd);
       setResult(res.data);
     } catch (err) {
+      console.error('Registration error:', err.response?.data || err.message);
       setError(err.response?.data?.error || 'حدث خطأ أثناء التسجيل');
     } finally {
       setLoading(false);
@@ -393,8 +444,8 @@ export default function Register() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="label-text">الاسم الكامل <span className="text-red-400">*</span></label>
-                    <input type="text" name="fullName" value={form.fullName} onChange={(e) => { setFormValue('fullName', e.target.value); if (touched.fullName) validateField('fullName', e.target.value); }} onBlur={() => handleBlur('fullName')} className={`input-field ${touched.fullName && errors.fullName ? '!border-red-500/50 !ring-red-500/10' : ''}`} placeholder="الاسم الرباعي" />
+                    <label className="label-text">الاسم والكنية <span className="text-red-400">*</span></label>
+                    <input type="text" name="fullName" value={form.fullName} onChange={(e) => { setFormValue('fullName', e.target.value); if (touched.fullName) validateField('fullName', e.target.value); }} onBlur={() => handleBlur('fullName')} className={`input-field ${touched.fullName && errors.fullName ? '!border-red-500/50 !ring-red-500/10' : ''}`} placeholder="الاسم والكنية" />
                     {touched.fullName && errors.fullName && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.fullName}</p>}
                   </div>
                   <div>
@@ -412,8 +463,7 @@ export default function Register() {
                     <SelectField
                       value={form.birthYear}
                       placeholder="اختر السنة"
-                      onChange={(e) => { setFormValue('birthYear', e.target.value); if (touched.birthYear) validateField('birthYear', e.target.value); }}
-                      onBlur={() => handleBlur('birthYear')}
+                      onChange={(e) => { const v = e.target.value; setFormValue('birthYear', v); setTouched(p => ({...p, birthYear: true})); validateField('birthYear', v); }}
                       name="birthYear"
                       error={touched.birthYear && errors.birthYear}
                       options={birthYears.map((y) => ({ value: String(y), label: String(y) }))}
@@ -426,46 +476,43 @@ export default function Register() {
               <div className="border-t border-gold-500/10 pt-5">
                 <h3 className="text-sm font-bold text-gold-400 mb-4 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14v7" />
                   </svg>
-                  معلومات والدي الطالب
+                  معلومات الطالب
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="label-text">حالة الأب <span className="text-red-400">*</span></label>
+                    <label className="label-text">الحالة الدراسية / الشهادات العلمية <span className="text-red-400">*</span></label>
                     <SelectField
-                      value={form.fatherStatus}
-                      placeholder="-- اختر --"
-                      onChange={(e) => { setFormValue('fatherStatus', e.target.value); if (touched.fatherStatus) validateField('fatherStatus', e.target.value); }}
-                      onBlur={() => handleBlur('fatherStatus')}
-                      name="fatherStatus"
-                      error={touched.fatherStatus && errors.fatherStatus}
-                      options={STATUS_OPTIONS.filter((o) => o.value).map((o) => ({ value: o.value, label: o.label }))}
+                      value={form.stage}
+                      placeholder="اختر المرحلة"
+                      onChange={(e) => { const v = e.target.value; setFormValue('stage', v); setTouched(p => ({...p, stage: true})); validateField('stage', v); }}
+                      name="stage"
+                      error={touched.stage && errors.stage}
+                      options={STAGES.map((s) => ({ value: s, label: s }))}
                     />
-                    {touched.fatherStatus && errors.fatherStatus && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.fatherStatus}</p>}
+                    {touched.stage && errors.stage && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.stage}</p>}
                   </div>
                   <div>
-                    <label className="label-text">حالة الأم <span className="text-red-400">*</span></label>
+                    <label className="label-text">العمل الحالي <span className="text-red-400">*</span></label>
+                    <input type="text" name="currentJob" value={form.currentJob} placeholder="مثال: محاسب، طالب، مهندس..." onChange={(e) => { setFormValue('currentJob', e.target.value); if (touched.currentJob) validateField('currentJob', e.target.value); }} onBlur={() => handleBlur('currentJob')} className={`input-field ${touched.currentJob && errors.currentJob ? '!border-red-500/50 !ring-red-500/10' : ''}`} />
+                    {touched.currentJob && errors.currentJob && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.currentJob}</p>}
+                  </div>
+                  <div>
+                    <label className="label-text">الجنسية <span className="text-red-400">*</span></label>
                     <SelectField
-                      value={form.motherStatus}
-                      placeholder="-- اختر --"
-                      onChange={(e) => { setFormValue('motherStatus', e.target.value); if (touched.motherStatus) validateField('motherStatus', e.target.value); }}
-                      onBlur={() => handleBlur('motherStatus')}
-                      name="motherStatus"
-                      error={touched.motherStatus && errors.motherStatus}
-                      options={STATUS_OPTIONS.filter((o) => o.value).map((o) => ({ value: o.value, label: o.label }))}
+                      value={form.nationality}
+                      placeholder="اختر الجنسية"
+                      onChange={(e) => { const v = e.target.value; setFormValue('nationality', v); setTouched(p => ({...p, nationality: true})); validateField('nationality', v); }}
+                      name="nationality"
+                      error={touched.nationality && errors.nationality}
+                      options={[
+                        { value: 'سوري', label: 'سوري' },
+                        { value: 'خارج سوريا', label: 'خارج سوريا' },
+                      ]}
                     />
-                    {touched.motherStatus && errors.motherStatus && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.motherStatus}</p>}
-                  </div>
-                  <div>
-                    <label className="label-text">مهنة الأب <span className="text-red-400">*</span></label>
-                    <input type="text" name="fatherOccupation" value={form.fatherOccupation} onChange={(e) => { setFormValue('fatherOccupation', e.target.value); if (touched.fatherOccupation) validateField('fatherOccupation', e.target.value); }} onBlur={() => handleBlur('fatherOccupation')} className={`input-field ${touched.fatherOccupation && errors.fatherOccupation ? '!border-red-500/50 !ring-red-500/10' : ''}`} />
-                    {touched.fatherOccupation && errors.fatherOccupation && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.fatherOccupation}</p>}
-                  </div>
-                  <div>
-                    <label className="label-text">مهنة الأم <span className="text-red-400">*</span></label>
-                    <input type="text" name="motherOccupation" value={form.motherOccupation} onChange={(e) => { setFormValue('motherOccupation', e.target.value); if (touched.motherOccupation) validateField('motherOccupation', e.target.value); }} onBlur={() => handleBlur('motherOccupation')} className={`input-field ${touched.motherOccupation && errors.motherOccupation ? '!border-red-500/50 !ring-red-500/10' : ''}`} />
-                    {touched.motherOccupation && errors.motherOccupation && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.motherOccupation}</p>}
+                    {touched.nationality && errors.nationality && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.nationality}</p>}
                   </div>
                 </div>
               </div>
@@ -477,39 +524,8 @@ export default function Register() {
                   </svg>
                   معلومات التواصل
                 </h3>
-                <div className="space-y-4">
-                  <CountryPhoneRow label="رقم الطالب" required={false} country={form.studentCountry} digits={form.studentPhone} onCountryChange={(v) => setFormValue('studentCountry', v)} onDigitsChange={(v) => { setFormValue('studentPhone', v); if (touched.studentPhone) validateField('studentPhone', v); }} error={touched.studentPhone ? errors.studentPhone : ''} showOptional />
-                  <CountryPhoneRow label="رقم الأب" required country={form.fatherCountry} digits={form.fatherPhone} onCountryChange={(v) => setFormValue('fatherCountry', v)} onDigitsChange={(v) => { setFormValue('fatherPhone', v); if (touched.fatherPhone) validateField('fatherPhone', v); }} error={touched.fatherPhone ? errors.fatherPhone : ''} />
-                  <CountryPhoneRow label="رقم الأم" required country={form.motherCountry} digits={form.motherPhone} onCountryChange={(v) => setFormValue('motherCountry', v)} onDigitsChange={(v) => { setFormValue('motherPhone', v); if (touched.motherPhone) validateField('motherPhone', v); }} error={touched.motherPhone ? errors.motherPhone : ''} />
-                  {errors._phone && <p className="text-red-400 text-xs pr-1">{errors._phone}</p>}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="label-text">رقم التواصل عبر واتساب <span className="text-red-400">*</span></label>
-                      <SelectField
-                        value={form.primaryContact}
-                        onChange={(e) => setFormValue('primaryContact', e.target.value)}
-                        name="primaryContact"
-                        options={[
-                          { value: 'father', label: 'رقم الأب' },
-                          { value: 'mother', label: 'رقم الأم' },
-                          { value: 'student', label: 'رقم الطالب' },
-                        ]}
-                      />
-                    </div>
-                    <div>
-                      <label className="label-text">المرحلة الدراسية <span className="text-red-400">*</span></label>
-                      <SelectField
-                        value={form.stage}
-                        placeholder="اختر المرحلة"
-                        onChange={(e) => { setFormValue('stage', e.target.value); if (touched.stage) validateField('stage', e.target.value); }}
-                        onBlur={() => handleBlur('stage')}
-                        name="stage"
-                        error={touched.stage && errors.stage}
-                        options={STAGES.map((s) => ({ value: s, label: s }))}
-                      />
-                      {touched.stage && errors.stage && <p className="text-red-400 text-xs mt-1.5 pr-1">{errors.stage}</p>}
-                    </div>
-                  </div>
+                <div>
+                  <CountryPhoneRow label="رقم التواصل (الطالب)" required country={form.studentCountry} digits={form.studentPhone} onCountryChange={(v) => setFormValue('studentCountry', v)} onDigitsChange={(v) => { setFormValue('studentPhone', v); setTouched(p => ({...p, studentPhone: true})); validateField('studentPhone', v); }} error={touched.studentPhone ? errors.studentPhone : ''} />
                 </div>
               </div>
 

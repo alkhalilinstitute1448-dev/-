@@ -44,7 +44,8 @@ export default function Login() {
       await login(username, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'خطأ في تسجيل الدخول');
+      console.error('Login submit error:', err);
+      setError(err.message || 'خطأ في تسجيل الدخول');
     } finally {
       setLoading(false);
     }

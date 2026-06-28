@@ -137,6 +137,8 @@ async function migrate() {
     { name: '001_initial_schema', sql: SCHEMA },
     { name: '002_seed_admin', sql: null, seed: true },
     { name: '003_add_stage_column', sql: "ALTER TABLE students ADD COLUMN stage TEXT", },
+    { name: '004_add_current_job', sql: "ALTER TABLE students ADD COLUMN current_job TEXT", },
+    { name: '005_add_nationality', sql: "ALTER TABLE students ADD COLUMN nationality TEXT", },
   ];
 
   for (const m of migrations) {

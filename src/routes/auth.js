@@ -67,27 +67,19 @@ router.post('/login', async (req, res) => {
 router.post('/register', upload.fields([{ name: 'photo', maxCount: 1 }]), async (req, res) => {
   try {
     const {
-      fullName, fatherName, motherName, fatherStatus, motherStatus,
-      fatherOccupation, motherOccupation, studentPhone: rawStudentPhone, fatherPhone: rawFatherPhone,
-      motherPhone: rawMotherPhone, primaryContact, birthYear, stage, batchId
+      fullName, fatherName, motherName, studentPhone: rawStudentPhone,
+      birthYear, stage, currentJob, nationality
     } = req.body;
     const photoUrl = req.files?.photo?.[0] ? `/uploads/${req.files.photo[0].filename}` : req.body.photoUrl;
 
     const studentPhone = normalizePhone(rawStudentPhone);
-    const fatherPhone = normalizePhone(rawFatherPhone);
-    const motherPhone = normalizePhone(rawMotherPhone);
 
-    const requiredFields = { fullName, fatherName, motherName, fatherStatus, motherStatus,
-      fatherOccupation, motherOccupation, fatherPhone, motherPhone, birthYear, stage };
+    const requiredFields = { fullName, fatherName, motherName, studentPhone, birthYear, stage };
     const missing = Object.entries(requiredFields)
       .filter(([, v]) => !v || (typeof v === 'string' && !v.trim()))
       .map(([k]) => k);
     if (missing.length > 0) {
       return res.status(400).json({ error: `Required fields missing: ${missing.join(', ')}` });
-    }
-
-    if (!fatherPhone && !motherPhone && !studentPhone) {
-      return res.status(400).json({ error: 'At least one phone number required (father, mother, or student)' });
     }
 
     const nameParts = fullName.trim().split(/\s+/);
@@ -110,18 +102,17 @@ router.post('/register', upload.fields([{ name: 'photo', maxCount: 1 }]), async 
     const userId = userResult.rows[0].id;
 
     await query(
-      `INSERT INTO students (user_id, full_name, father_name, mother_name, father_status, mother_status,
-        father_occupation, mother_occupation, student_phone, father_phone, mother_phone,
-        primary_contact, birth_year, photo_url, batch_id, stage)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-      [userId, fullName, fatherName, motherName, fatherStatus || null, motherStatus || null,
-        fatherOccupation || null, motherOccupation || null, studentPhone || null,
-        fatherPhone || null, motherPhone || null, primaryContact || 'father',
-        birthYear || null, photoUrl || null, batchId || null, stage || null]
+      `INSERT INTO students (user_id, full_name, father_name, mother_name, student_phone,
+        birth_year, photo_url, stage, current_job, nationality)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [userId, fullName, fatherName, motherName, studentPhone || null,
+        birthYear || null, photoUrl || null, stage || null,
+        currentJob || null, nationality || null]
     );
 
     res.json({ username, password: tempPassword, userId });
   } catch (err) {
+    console.error('Registration error:', err);
     res.status(500).json({ error: 'Registration failed' });
   }
 });

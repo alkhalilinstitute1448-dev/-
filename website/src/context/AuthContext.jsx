@@ -40,7 +40,8 @@ export function AuthProvider({ children }) {
       setSuccess('تم تسجيل الدخول بنجاح');
       return res.data;
     } catch (err) {
-      const message = err.response?.data?.message || 'فشل تسجيل الدخول. تحقق من اسم المستخدم وكلمة المرور';
+      console.error('Login error:', err.response?.data || err.message);
+      const message = err.response?.data?.error || 'فشل تسجيل الدخول. تحقق من اسم المستخدم وكلمة المرور';
       setError(message);
       throw new Error(message);
     }
