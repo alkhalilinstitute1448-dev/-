@@ -10,7 +10,4 @@ export default defineConfig({
       '/uploads': 'http://localhost:3000',
     },
   },
-  define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || '/api'),
-  },
 });
