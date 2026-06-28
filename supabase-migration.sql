@@ -121,7 +121,32 @@ INSERT INTO users (username, password_hash, role)
 SELECT 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
 
--- 3. تفعيل Row Level Security (اختياري)
+-- 3. إنشاء دوال pg_query و pg_exec لتنفيذ SQL عبر REST API (HTTPS)
+CREATE OR REPLACE FUNCTION pg_query(query_text text)
+RETURNS SETOF json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY EXECUTE 'SELECT row_to_json(_r.*) FROM (' || query_text || ') _r';
+EXCEPTION
+  WHEN OTHERS THEN
+    EXECUTE query_text;
+    RETURN;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION pg_exec(query_text text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  EXECUTE query_text;
+END;
+$$;
+
+-- 4. تفعيل Row Level Security (اختياري)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE batches ENABLE ROW LEVEL SECURITY;

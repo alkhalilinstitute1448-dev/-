@@ -1,11 +1,17 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const USE_POSTGRES = !!process.env.DATABASE_URL;
+const USE_SUPABASE = process.env.USE_SUPABASE === 'true' || !!process.env.SUPABASE_SERVICE_KEY;
+const USE_POSTGRES = !USE_SUPABASE && !!process.env.DATABASE_URL;
 
 let query, getClient, pool;
 
-if (USE_POSTGRES) {
+if (USE_SUPABASE) {
+  const supabase = require('./db-supabase');
+  query = supabase.query;
+  getClient = supabase.getClient;
+  pool = null;
+} else if (USE_POSTGRES) {
   const { Pool } = require('pg');
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -81,7 +87,10 @@ if (USE_POSTGRES) {
 }
 
 async function migrate() {
-  if (USE_POSTGRES) {
+  if (USE_SUPABASE) {
+    const m = require('./db-supabase');
+    await m.migrate();
+  } else if (USE_POSTGRES) {
     const m = require('./migrate-pg');
     await m.migrate();
   } else {
@@ -90,4 +99,4 @@ async function migrate() {
   }
 }
 
-module.exports = { query, getClient, pool, USE_POSTGRES, migrate };
+module.exports = { query, getClient, pool, USE_POSTGRES, USE_SUPABASE, migrate };
