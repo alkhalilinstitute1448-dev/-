@@ -141,6 +141,7 @@ async function migrate() {
     { name: '003_add_stage_column', sql: "ALTER TABLE students ADD COLUMN IF NOT EXISTS stage TEXT", },
     { name: '004_add_current_job', sql: "ALTER TABLE students ADD COLUMN IF NOT EXISTS current_job TEXT", },
     { name: '005_add_nationality', sql: "ALTER TABLE students ADD COLUMN IF NOT EXISTS nationality TEXT", },
+    { name: '006_fix_admin_role', sql: "UPDATE users SET role = 'admin' WHERE username = 'admin' AND role != 'admin'", },
   ];
 
   for (const m of migrations) {
