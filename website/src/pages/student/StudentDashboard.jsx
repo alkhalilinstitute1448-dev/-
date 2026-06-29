@@ -302,7 +302,7 @@ export default function StudentDashboard() {
                                 <p className="text-sm text-gray-400">{f.fileName || 'ملف PDF'}</p>
                               </div>
                             </div>
-                            <a href={`/api/curriculum/${f.id}/download`} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                            <a href={`${api.defaults.baseURL}/curriculum/${f.id}/download`} target="_blank" rel="noopener noreferrer" className="btn-secondary">
                               تحميل
                             </a>
                           </div>

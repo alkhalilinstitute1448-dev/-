@@ -58,7 +58,7 @@ export default function AdminCurriculum() {
   };
 
   const downloadFile = (fileItem) => {
-    window.open(`/api/curriculum/${fileItem.id}/download`, '_blank');
+    window.open(`${api.defaults.baseURL}/curriculum/${fileItem.id}/download`, '_blank');
   };
 
   return (
