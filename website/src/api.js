@@ -3,7 +3,6 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: 'https://alkhaleel-academy.onrender.com/api',
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
