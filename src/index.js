@@ -10,6 +10,7 @@ const examRoutes = require('./routes/exams');
 const attendanceRoutes = require('./routes/attendance');
 const curriculumRoutes = require('./routes/curriculum');
 const gradeRoutes = require('./routes/grades');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,7 @@ app.use('/api/exams', examRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/grades', gradeRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
