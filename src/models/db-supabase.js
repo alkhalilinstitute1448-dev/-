@@ -232,6 +232,29 @@ async function migrate() {
       name: '004_add_stage_column',
       sql: 'ALTER TABLE students ADD COLUMN IF NOT EXISTS stage TEXT',
     },
+    {
+      name: '005_fix_admin_role',
+      sql: "UPDATE users SET role = 'admin' WHERE username = 'admin' AND role != 'admin'",
+    },
+    {
+      name: '006_clean_dup_students',
+      sql: `
+        DELETE FROM students WHERE id IN (
+          SELECT id FROM (
+            SELECT id, ROW_NUMBER() OVER (PARTITION BY student_phone ORDER BY created_at ASC, id ASC) AS rn
+            FROM students WHERE student_phone IS NOT NULL
+          ) dup WHERE dup.rn > 1
+        );
+        DELETE FROM users WHERE role = 'student' AND id NOT IN (SELECT user_id FROM students);
+      `,
+    },
+    {
+      name: '007_unique_student_phone',
+      sql: `
+        ALTER TABLE students DROP CONSTRAINT IF EXISTS students_student_phone_key;
+        ALTER TABLE students ADD CONSTRAINT students_student_phone_key UNIQUE (student_phone);
+      `,
+    },
   ];
 
   for (const step of migrationSteps) {
