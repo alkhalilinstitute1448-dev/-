@@ -139,6 +139,17 @@ async function migrate() {
     { name: '003_add_stage_column', sql: "ALTER TABLE students ADD COLUMN stage TEXT", },
     { name: '004_add_current_job', sql: "ALTER TABLE students ADD COLUMN current_job TEXT", },
     { name: '005_add_nationality', sql: "ALTER TABLE students ADD COLUMN nationality TEXT", },
+    { name: '006_fix_admin_role', sql: "UPDATE users SET role = 'admin' WHERE username = 'admin' AND role != 'admin'", },
+    { name: '007_clean_dup_students', sql: `
+      DELETE FROM students WHERE id IN (
+        SELECT id FROM (
+          SELECT id, ROW_NUMBER() OVER (PARTITION BY student_phone ORDER BY created_at ASC, id ASC) AS rn
+          FROM students WHERE student_phone IS NOT NULL
+        ) dup WHERE dup.rn > 1
+      );
+      DELETE FROM users WHERE role = 'student' AND id NOT IN (SELECT user_id FROM students);
+    `, },
+    { name: '008_unique_student_phone', sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_students_student_phone ON students(student_phone)", },
   ];
 
   for (const m of migrations) {
