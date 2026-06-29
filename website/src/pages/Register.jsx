@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import api from '../api';
+import { useAuth } from '../context/AuthContext';
 import SelectField from '../components/SelectField';
 import { COUNTRIES, normalizePhone, buildFullPhone, extractLocalDigits } from '../utils/phone';
 
@@ -240,7 +241,9 @@ export default function Register() {
   const [showCamera, setShowCamera] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const submittedRef = useRef(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   function setFormValue(name, value) {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -334,9 +337,11 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittedRef.current) return;
     setError('');
     if (!validateAll()) return;
 
+    submittedRef.current = true;
     setLoading(true);
     try {
       const fd = new FormData();
@@ -348,9 +353,15 @@ export default function Register() {
       if (photo) fd.append('photo', photo);
       const res = await api.post('/auth/register', fd);
       setResult(res.data);
+      if (res.data.token && res.data.user) {
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        setTimeout(() => navigate('/student'), 4000);
+      }
     } catch (err) {
       console.error('Registration error:', err.response?.data || err.message);
       setError(err.response?.data?.error || 'حدث خطأ أثناء التسجيل');
+      submittedRef.current = false;
     } finally {
       setLoading(false);
     }
@@ -398,7 +409,13 @@ export default function Register() {
                 </svg>
                 نسخ البيانات
               </button>
-              <button onClick={() => navigate('/login')} className="btn-secondary w-full">تسجيل الدخول</button>
+              <button onClick={() => navigate('/student')} className="btn-primary w-full flex items-center justify-center gap-2 mb-3">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                الذهاب إلى لوحة التحكم
+              </button>
+              <p className="text-center text-xs text-gray-500 mt-4">سيتم تحويلك تلقائياً بعد 4 ثوانٍ...</p>
             </div>
           </div>
         </div>

@@ -82,6 +82,11 @@ router.post('/register', upload.fields([{ name: 'photo', maxCount: 1 }]), async 
       return res.status(400).json({ error: `Required fields missing: ${missing.join(', ')}` });
     }
 
+    const existingPhone = await query("SELECT s.id FROM students s WHERE s.student_phone = $1", [studentPhone]);
+    if (existingPhone.rows.length > 0) {
+      return res.status(409).json({ error: 'رقم الهاتف مسجل مسبقاً. يرجى تسجيل الدخول.' });
+    }
+
     const nameParts = fullName.trim().split(/\s+/);
     const shortName = nameParts.length >= 2
       ? nameParts[0] + '.' + nameParts[nameParts.length - 1]
@@ -110,7 +115,9 @@ router.post('/register', upload.fields([{ name: 'photo', maxCount: 1 }]), async 
         currentJob || null, nationality || null]
     );
 
-    res.json({ username, password: tempPassword, userId });
+    const token = generateToken({ id: userId, username, role: 'student' });
+
+    res.json({ username, password: tempPassword, userId, token, user: { id: userId, username, role: 'student' } });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ error: 'Registration failed' });
