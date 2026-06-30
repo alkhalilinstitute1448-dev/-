@@ -22,7 +22,7 @@ const router = express.Router();
 
 router.get('/', verifyToken, async (req, res) => {
   let sql = `SELECT cf.id, cf.stage_id, cf.title, cf.file_url, cf.file_type, cf.created_at, s.name as stage_name
-    FROM curriculum_files cf JOIN stages s ON s.id = cf.stage_id`;
+    FROM curriculum_files cf LEFT JOIN stages s ON s.id = cf.stage_id`;
   const params = [];
   const conditions = [];
 

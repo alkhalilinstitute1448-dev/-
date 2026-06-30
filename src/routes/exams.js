@@ -23,7 +23,7 @@ const router = express.Router();
 router.get('/', verifyToken, async (req, res) => {
   let sql = `SELECT e.id, e.title, e.stage_id, e.subject, e.code, e.start_time, e.end_time,
     e.duration_minutes, e.file_url, e.is_active, e.created_at, s.name as stage_name
-    FROM exams e JOIN stages s ON s.id = e.stage_id`;
+    FROM exams e LEFT JOIN stages s ON s.id = e.stage_id`;
   const params = [];
   const conditions = [];
 
@@ -65,7 +65,7 @@ router.post('/', verifyToken, requireRole('admin', 'teacher'), upload.single('fi
 
 router.get('/:id', verifyToken, async (req, res) => {
   const result = await query(`SELECT e.*, s.name as stage_name FROM exams e
-    JOIN stages s ON s.id = e.stage_id WHERE e.id = $1`, [req.params.id]);
+    LEFT JOIN stages s ON s.id = e.stage_id WHERE e.id = $1`, [req.params.id]);
   if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
   const row = result.rows[0];
   const exam = {

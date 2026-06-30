@@ -8,6 +8,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminBatches from './pages/admin/AdminBatches';
 import AdminExams from './pages/admin/AdminExams';
 import AdminCurriculum from './pages/admin/AdminCurriculum';
+import AdminBookDelivery from './pages/admin/AdminBookDelivery';
 import TeacherGrades from './pages/teacher/TeacherGrades';
 import TeacherExams from './pages/teacher/TeacherExams';
 import AttendancePanel from './pages/attendance/AttendancePanel';
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/admin/batches" element={<ProtectedRoute roles={['admin']}><AdminBatches /></ProtectedRoute>} />
         <Route path="/admin/exams" element={<ProtectedRoute roles={['admin', 'teacher']}><AdminExams /></ProtectedRoute>} />
         <Route path="/admin/curriculum" element={<ProtectedRoute roles={['admin']}><AdminCurriculum /></ProtectedRoute>} />
+        <Route path="/admin/bookdelivery" element={<ProtectedRoute roles={['admin']}><AdminBookDelivery /></ProtectedRoute>} />
 
         <Route path="/teacher/grades" element={<ProtectedRoute roles={['teacher']}><TeacherGrades /></ProtectedRoute>} />
         <Route path="/teacher/exams" element={<ProtectedRoute roles={['teacher']}><TeacherExams /></ProtectedRoute>} />

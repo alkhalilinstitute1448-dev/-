@@ -6,7 +6,19 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 router.get('/', verifyToken, requireRole('admin'), async (req, res) => {
-  const result = await query("SELECT id, username, role, device_id, is_active, created_at FROM users ORDER BY created_at DESC");
+  let sql = "SELECT id, username, role, device_id, is_active, created_at FROM users";
+  const params = [];
+  const conditions = [];
+
+  if (req.query.role) {
+    conditions.push(`role = $${params.length + 1}`);
+    params.push(req.query.role);
+  }
+
+  if (conditions.length > 0) sql += ' WHERE ' + conditions.join(' AND ');
+  sql += ' ORDER BY created_at DESC';
+
+  const result = await query(sql, params);
   const users = result.rows.map(row => ({
     id: row.id, username: row.username, role: row.role,
     deviceId: row.device_id, isActive: row.is_active, createdAt: row.created_at

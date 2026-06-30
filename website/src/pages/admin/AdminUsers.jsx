@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../api';
 import SelectField from '../../components/SelectField';
 
 const roles = ['admin', 'teacher', 'student', 'attendance_officer'];
 
+const roleLabels = { admin: 'مدير', teacher: 'معلم', student: 'طالب', attendance_officer: 'مسؤول تفقد' };
+
 export default function AdminUsers() {
+  const [searchParams] = useSearchParams();
+  const roleFilter = searchParams.get('role') || '';
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,12 +19,13 @@ export default function AdminUsers() {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(); }, [roleFilter]);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/users');
+      const params = roleFilter ? { role: roleFilter } : {};
+      const res = await api.get('/users', { params });
       setUsers(res.data);
     } catch (err) {
       setError('فشل تحميل المستخدمين');
@@ -85,8 +91,15 @@ export default function AdminUsers() {
   return (
     <div dir="rtl" className="app-bg min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="page-header !mb-0">إدارة المستخدمين</h1>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="page-header !mb-0">إدارة المستخدمين</h1>
+            {roleFilter && (
+              <span className="badge-gold text-sm px-4 py-1.5">
+                {roleLabels[roleFilter] || roleFilter}
+              </span>
+            )}
+          </div>
           <button onClick={() => setShowForm(!showForm)} className="btn-primary !px-5 !py-2.5 !text-sm">
             {showForm ? 'إلغاء' : 'إضافة مستخدم جديد'}
           </button>

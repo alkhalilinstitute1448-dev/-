@@ -11,6 +11,8 @@ const attendanceRoutes = require('./routes/attendance');
 const curriculumRoutes = require('./routes/curriculum');
 const gradeRoutes = require('./routes/grades');
 const adminRoutes = require('./routes/admin');
+const stageRoutes = require('./routes/stages');
+const bookDeliveryRoutes = require('./routes/bookdelivery');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +30,8 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/grades', gradeRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/stages', stageRoutes);
+app.use('/api/bookdelivery', bookDeliveryRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

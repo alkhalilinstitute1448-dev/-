@@ -26,8 +26,8 @@ export default function Dashboard() {
 
   const roleCards = {
     admin: [
-      { title: 'الطلاب', count: stats?.students ?? 0, color: 'from-gold-500 to-gold-600', link: '/admin/users' },
-      { title: 'المعلمون', count: stats?.teachers ?? 0, color: 'from-emerald-500 to-emerald-600', link: '/admin/users' },
+      { title: 'الطلاب', count: stats?.students ?? 0, color: 'from-gold-500 to-gold-600', link: '/admin/users?role=student' },
+      { title: 'المعلمون', count: stats?.teachers ?? 0, color: 'from-emerald-500 to-emerald-600', link: '/admin/users?role=teacher' },
       { title: 'الامتحانات', count: stats?.exams ?? 0, color: 'from-gold-500 to-gold-600', link: '/admin/exams' },
       { title: 'سجل التفقد', count: stats?.attendance ?? 0, color: 'from-gold-500 to-gold-600', link: '/attendance' },
     ],
