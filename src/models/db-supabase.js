@@ -206,7 +206,7 @@ async function migrate() {
         SECURITY DEFINER
         AS $$
         BEGIN
-          RETURN QUERY EXECUTE 'SELECT row_to_json(_r.*) FROM (' || query_text || ') _r';
+          RETURN QUERY EXECUTE 'WITH _cte AS (' || query_text || ') SELECT row_to_json(_r.*) FROM _cte _r';
         EXCEPTION
           WHEN OTHERS THEN
             EXECUTE query_text;
@@ -233,7 +233,15 @@ async function migrate() {
       sql: 'ALTER TABLE students ADD COLUMN IF NOT EXISTS stage TEXT',
     },
     {
-      name: '005_fix_admin_role',
+      name: '005_add_current_job',
+      sql: 'ALTER TABLE students ADD COLUMN IF NOT EXISTS current_job TEXT',
+    },
+    {
+      name: '006_add_nationality',
+      sql: 'ALTER TABLE students ADD COLUMN IF NOT EXISTS nationality TEXT',
+    },
+    {
+      name: '007_fix_admin_role',
       sql: "UPDATE users SET role = 'admin' WHERE username = 'admin' AND role != 'admin'",
     },
     {
