@@ -6,22 +6,12 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=7d
       - NODE_ENV=production
-      - FRONTEND_URL=${FRONTEND_URL}
     volumes:
       - backend_uploads:/app/uploads
-    restart: unless-stopped
-
-  website:
-    build: ./website
-    ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=/api
-    depends_on:
-      - backend
+      - backend_data:/app/data
     restart: unless-stopped
 
 volumes:
   backend_uploads:
+  backend_data:

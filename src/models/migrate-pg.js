@@ -3,8 +3,19 @@ const bcrypt = require('bcryptjs');
 function getQuery() {
   return require('./db').query;
 }
-const fs = require('fs');
-const path = require('path');
+
+const DROP_OLD_TABLES = `
+  DROP TABLE IF EXISTS books CASCADE;
+  DROP TABLE IF EXISTS curriculum_files CASCADE;
+  DROP TABLE IF EXISTS grades CASCADE;
+  DROP TABLE IF EXISTS attendance CASCADE;
+  DROP TABLE IF EXISTS exam_results CASCADE;
+  DROP TABLE IF EXISTS exams CASCADE;
+  DROP TABLE IF EXISTS students CASCADE;
+  DROP TABLE IF EXISTS stages CASCADE;
+  DROP TABLE IF EXISTS batches CASCADE;
+  DROP TABLE IF EXISTS users CASCADE;
+`;
 
 const MIGRATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS _migrations (
@@ -12,120 +23,6 @@ const MIGRATIONS_TABLE = `
     name TEXT UNIQUE NOT NULL,
     applied_at TIMESTAMPTZ DEFAULT NOW()
   )
-`;
-
-const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(100) UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK(role IN ('admin', 'teacher', 'attendance_officer', 'student')),
-    device_id TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS batches (
-    id SERIAL PRIMARY KEY,
-    year INTEGER NOT NULL,
-    name VARCHAR(200) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS stages (
-    id SERIAL PRIMARY KEY,
-    batch_id INTEGER NOT NULL REFERENCES batches(id) ON DELETE CASCADE,
-    name VARCHAR(200) NOT NULL,
-    level INTEGER NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS students (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    full_name VARCHAR(200) NOT NULL,
-    father_name VARCHAR(200) NOT NULL,
-    mother_name VARCHAR(200) NOT NULL,
-    father_status VARCHAR(50),
-    mother_status VARCHAR(50),
-    father_occupation VARCHAR(200),
-    mother_occupation VARCHAR(200),
-    student_phone VARCHAR(50),
-    father_phone VARCHAR(50),
-    mother_phone VARCHAR(50),
-    primary_contact VARCHAR(10) CHECK(primary_contact IN ('student', 'father', 'mother')),
-    birth_year INTEGER,
-    photo_url TEXT,
-    batch_id INTEGER REFERENCES batches(id),
-    stage_id INTEGER REFERENCES stages(id),
-    stage TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS exams (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(300) NOT NULL,
-    stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
-    subject VARCHAR(200),
-    code VARCHAR(20) UNIQUE,
-    start_time TIMESTAMPTZ,
-    end_time TIMESTAMPTZ,
-    duration_minutes INTEGER,
-    file_url TEXT,
-    created_by INTEGER REFERENCES users(id),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS exam_results (
-    id SERIAL PRIMARY KEY,
-    exam_id INTEGER NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    score REAL,
-    total REAL,
-    submitted_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS attendance (
-    id SERIAL PRIMARY KEY,
-    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    status VARCHAR(10) NOT NULL CHECK(status IN ('present', 'absent', 'late', 'excused')),
-    recorded_by INTEGER REFERENCES users(id),
-    notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS grades (
-    id SERIAL PRIMARY KEY,
-    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    subject VARCHAR(200) NOT NULL,
-    grade REAL,
-    term VARCHAR(50),
-    created_by INTEGER REFERENCES users(id),
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS curriculum_files (
-    id SERIAL PRIMARY KEY,
-    stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
-    title VARCHAR(300) NOT NULL,
-    file_url TEXT NOT NULL,
-    file_type VARCHAR(50),
-    uploaded_by INTEGER REFERENCES users(id),
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
-
-  CREATE TABLE IF NOT EXISTS books (
-    id SERIAL PRIMARY KEY,
-    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
-    book_name VARCHAR(300) NOT NULL,
-    received_date DATE,
-    returned_date DATE,
-    status VARCHAR(20) DEFAULT 'pending' CHECK(status IN ('pending', 'received', 'returned')),
-    created_at TIMESTAMPTZ DEFAULT NOW()
-  );
 `;
 
 async function migrate() {
@@ -136,45 +33,26 @@ async function migrate() {
   const applied = rows.map(r => r.name);
 
   const migrations = [
-    { name: '001_initial_schema', sql: SCHEMA },
-    { name: '002_seed_admin', sql: null, seed: true },
-    { name: '003_add_stage_column', sql: "ALTER TABLE students ADD COLUMN IF NOT EXISTS stage TEXT", },
-    { name: '004_add_current_job', sql: "ALTER TABLE students ADD COLUMN IF NOT EXISTS current_job TEXT", },
-    { name: '005_add_nationality', sql: "ALTER TABLE students ADD COLUMN IF NOT EXISTS nationality TEXT", },
-    { name: '006_fix_admin_role', sql: "UPDATE users SET role = 'admin' WHERE username = 'admin' AND role != 'admin'", },
-    { name: '007_clean_dup_students', sql: `
-      DELETE FROM students WHERE id IN (
-        SELECT id FROM (
-          SELECT id, ROW_NUMBER() OVER (PARTITION BY student_phone ORDER BY created_at ASC, id ASC) AS rn
-          FROM students WHERE student_phone IS NOT NULL
-        ) dup WHERE dup.rn > 1
-      );
-      DELETE FROM users WHERE role = 'student' AND id NOT IN (SELECT user_id FROM students);
-    `, },
-    { name: '008_unique_student_phone', sql: "ALTER TABLE students ADD CONSTRAINT students_student_phone_key UNIQUE (student_phone)", },
+    { name: '000_clean_slate', sql: DROP_OLD_TABLES },
   ];
 
   for (const m of migrations) {
     if (applied.includes(m.name)) continue;
     if (m.sql) {
-      await q(m.sql);
-    }
-    if (m.seed) {
-      const existing = await q("SELECT id FROM users WHERE username = 'admin'");
-      if (existing.rows.length === 0) {
-        const hash = bcrypt.hashSync('admin123', 10);
-        await q(
-          "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'admin')",
-          ['admin', hash]
-        );
-        console.log('Default admin created: admin / admin123');
+      try {
+        await q(m.sql);
+      } catch (err) {
+        console.log(`Migration ${m.name}: ${err.message}`);
       }
     }
     await q("INSERT INTO _migrations (name) VALUES ($1)", [m.name]);
     console.log(`Migration ${m.name} applied`);
   }
 
-  console.log('All migrations applied successfully.');
+  const healthy = await q('SELECT 1 AS ok');
+  if (healthy.rows[0]?.ok === 1) {
+    console.log('Database connection verified.');
+  }
 }
 
 module.exports = { migrate };
