@@ -1,9 +1,11 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../hooks/useData';
 import api from '../api';
-import { Card, Loader, PageHeader, EmptyState, Badge } from '../components/ui';
+import { Card, Loader, PageHeader, Button, Badge, EmptyState, StatCard } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
+import { useSession } from '../context/SessionContext';
+import { formatDuration } from '../utils/time';
 
 const TASK_STATUS = {
   pending: { label: 'قيد الانتظار', color: 'gray' },
@@ -12,81 +14,234 @@ const TASK_STATUS = {
   cancelled: { label: 'ملغاة', color: 'red' },
 };
 
+const PRESENCE_META = {
+  in_room: { label: 'داخل غرفة الإعلام', color: 'green', dot: 'bg-emerald-400' },
+  outside: { label: 'متصل خارج الغرفة', color: 'orange', dot: 'bg-amber-400' },
+  online: { label: 'متصل', color: 'blue', dot: 'bg-electric-400' },
+  offline: { label: 'غير متصل', color: 'gray', dot: 'bg-gray-600' },
+};
+
 export default function Dashboard() {
   const { user, can } = useAuth();
+  const navigate = useNavigate();
+  const session = useSession();
+  const { status, geo, sessionSeconds, session: activeSession, permission, requestLocation } = session;
+
   const { data, loading } = useData(() => api.get('/dashboard'));
+  const tasks = useData(() => api.get('/tasks'));
+  const presence = useData(() => api.get('/attendance/presence'));
+
+  const prevActive = useRef(false);
+  const active = status === 'in_room';
+
+  useEffect(() => {
+    if (active && !prevActive.current) navigate('/work');
+    prevActive.current = active;
+  }, [active, navigate]);
+
+  useEffect(() => {
+    const t = setInterval(() => presence.reload(), 20000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) return <Loader />;
-  const s = data?.stats;
 
-  const cards = [
-    { label: 'الأعضاء', value: s?.users ?? 0, icon: '✧', to: '/users', visible: can('users.view') },
-    { label: 'مهام قيد التنفيذ', value: s?.tasks?.in_progress ?? 0, icon: '✓', to: '/tasks', visible: can('tasks.view') },
-    { label: 'مهام مكتملة', value: s?.tasks?.completed ?? 0, icon: '✔', to: '/tasks', visible: can('tasks.view') },
-    { label: 'الدروس', value: s?.lessons ?? 0, icon: '▤', to: '/lessons', visible: can('lessons.view') },
-    { label: 'الكابشنات', value: s?.captions ?? 0, icon: '❝', to: '/captions', visible: can('captions.view') },
-    { label: 'حاضرون اليوم', value: s?.present_today ?? 0, icon: '◷', to: '/attendance', visible: can('attendance.view') },
-  ];
+  const s = data?.stats;
+  const myTasks = (tasks.data || []).filter((t) => t.assigned_to === user?.id && (t.status === 'pending' || t.status === 'in_progress')).slice(0, 5);
+  const duration = formatDuration(activeSession?.session_start ? sessionSeconds : 0);
+  const members = presence.data || [];
+  const onlineCount = members.filter((m) => m.status !== 'offline').length;
 
   return (
     <>
-      <PageHeader
-        title="لوحة التحكم"
-        subtitle={`مرحباً ${user?.name} — إليك نظرة عامة على الفريق`}
-      />
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {cards
-          .filter((c) => c.visible)
-          .map((c) => (
-            <Link key={c.label} to={c.to} className="block">
-              <Card className="p-5 hover:shadow-card-hover hover:border-gold-500/25 transition-all">
-                <div className="text-2xl text-gold-500/80 mb-2">{c.icon}</div>
-                <div className="text-3xl font-extrabold text-gold-200">{c.value}</div>
-                <div className="text-sm text-gray-500 mt-1">{c.label}</div>
-              </Card>
-            </Link>
-          ))}
+      <PageHeader title="لوحة التحكم" subtitle="مركز عمل الفريق الإعلامي — حالة حية" />
+
+      {/* Hero status + timer */}
+      <Card className="p-6 sm:p-8 mb-6 overflow-hidden relative">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(600px 220px at 15% 0%, rgba(43,71,221,0.18), transparent 60%)' }}
+        />
+        <div className="relative flex flex-col lg:flex-row lg:items-center gap-8">
+          {/* Status section */}
+          <div className="flex-1">
+            {active ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="w-4 h-4 rounded-full bg-emerald-400 animate-[pulseSoft_2.2s_infinite]" />
+                  <span className="text-emerald-300 font-semibold text-lg">داخل غرفة الإعلام</span>
+                </div>
+                <p className="text-white text-xl font-bold mt-3">تم تسجيل حضورك بنجاح ✦</p>
+                <p className="text-gray-400 mt-2 flex items-center gap-2 text-sm">
+                  <span className="text-royal-400">◉</span> {geo?.name || 'غرفة الإعلام'}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className={`w-4 h-4 rounded-full ${permission === 'denied' ? 'bg-red-400' : status === 'checking' ? 'bg-amber-400 animate-pulse' : 'bg-gray-600'}`} />
+                  <span className="text-gray-200 font-semibold text-lg">
+                    {permission === 'denied' ? 'الوصول إلى الموقع مرفوض'
+                      : status === 'checking' ? 'جارِ تحديد موقعك...'
+                      : permission === 'unsupported' ? 'الموقع غير مدعوم في المتصفح'
+                      : 'خارج غرفة الإعلام'}
+                  </span>
+                </div>
+                <p className="text-gray-400 mt-3 max-w-md text-sm leading-relaxed">
+                  لتسجيل الحضور يجب أن تكون داخل النطاق الجغرافي لـ <span className="text-white">{geo?.name}</span>
+                  {' '}(نصف القطر {geo?.radius} م + هامش {geo?.margin} م). سمح بالوصول إلى الموقع وادخل غرفة الإعلام.
+                </p>
+                {(permission === 'denied' || permission === 'prompt') && (
+                  <Button className="mt-4" onClick={requestLocation}>تفعيل الموقع وإعادة المحاولة</Button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Timer + end session */}
+          <div className="shrink-0 flex flex-col items-center gap-4">
+            <div className="text-center">
+              <div className="text-xs text-gray-500 mb-2 tracking-wide">مدة جلسة العمل</div>
+              <div className="font-extrabold text-white leading-none text-5xl sm:text-6xl lg:text-7xl tabular-nums">
+                {active ? duration.text : '—'}
+              </div>
+            </div>
+            {active && (
+              <Button variant="danger" size="lg" onClick={endSession}>إنهاء جلسة العمل</Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* 6 stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <StatCard icon="✧" label="عدد الأعضاء" value={s?.users ?? 0} accent="royal" to={can('users.view') ? '/users' : undefined} />
+        <StatCard icon="◷" label="الحضور اليوم" value={s?.present_today ?? 0} accent="emerald" to={can('attendance.view') ? '/attendance' : undefined} />
+        <StatCard icon="✓" label="المهام الحالية" value={s?.tasks?.in_progress ?? 0} accent="indigo" to={can('tasks.view') ? '/tasks' : undefined} />
+        <StatCard icon="⚠" label="مهام متأخرة" value={s?.tasks?.overdue ?? 0} accent="amber" to={can('tasks.view') ? '/tasks' : undefined} />
+        <StatCard icon="⌛" label="ساعات العمل اليوم" value={s?.work_hours_today ?? 0} accent="electric" sub="ساعة" />
+        <StatCard icon="▤" label="الدرس القادم" value={s?.next_lesson ? '1' : '0'} accent="royal" to={can('lessons.view') ? '/lessons' : undefined} sub={s?.next_lesson?.title || 'لا يوجد'} />
       </div>
 
-      {can('tasks.view') && (
-        <Card className="mt-6 p-6">
+      {/* 3 big cards */}
+      <div className="grid lg:grid-cols-3 gap-4 mb-6">
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gold-200">مهامي</h3>
-            <Link to="/tasks" className="text-sm text-gold-500 hover:text-gold-400">
-              عرض الكل ←
-            </Link>
+            <h3 className="font-bold text-white">مهام اليوم</h3>
+            <Link to="/tasks" className="text-sm text-electric-300 hover:text-electric-200">الكل ←</Link>
           </div>
-          <div className="flex flex-wrap gap-3">
-            {['pending', 'in_progress', 'completed'].map((k) => (
-              <div key={k} className="flex items-center gap-2">
-                <Badge color={TASK_STATUS[k].color}>{TASK_STATUS[k].label}</Badge>
-                <span className="text-lg font-bold text-gray-300">{s?.my_tasks?.[k] ?? 0}</span>
-              </div>
+          {!myTasks.length && <EmptyState title="لا توجد مهام مخصصة لك اليوم" sub="سيتم إظهار مهامك هنا" />}
+          <ul className="space-y-2.5">
+            {myTasks.map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-3 glass rounded-2xl px-4 py-3">
+                <span className="text-sm text-gray-200 truncate">{t.title}</span>
+                <Badge color={TASK_STATUS[t.status].color}>{TASK_STATUS[t.status].label}</Badge>
+              </li>
             ))}
+          </ul>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white">الدرس القادم</h3>
+            <Link to="/lessons" className="text-sm text-electric-300 hover:text-electric-200">الكل ←</Link>
+          </div>
+          {!s?.next_lesson ? (
+            <EmptyState title="لا توجد دروس مجدولة" />
+          ) : (
+            <div className="glass rounded-2xl p-5">
+              <div className="text-lg font-bold text-white">{s.next_lesson.title}</div>
+              <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                <span className="chip text-indigo-300 bg-indigo-500/10 border-indigo-500/30">
+                  {s.next_lesson.type === 'live' ? 'بث مباشر' : 'درس مسجل'}
+                </span>
+                {s.next_lesson.presenter && (
+                  <span className="chip text-gray-400 bg-white/[0.04] border-white/10">مقدم: {s.next_lesson.presenter}</span>
+                )}
+                {s.next_lesson.date && (
+                  <span className="chip text-gray-400 bg-white/[0.04] border-white/10">{new Date(s.next_lesson.date).toLocaleDateString('ar')}</span>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white">آخر النشاطات</h3>
+          </div>
+          {!data?.recentActivity?.length && <EmptyState title="لا توجد نشاطات بعد" />}
+          <ul className="space-y-2">
+            {data?.recentActivity?.slice(0, 6).map((a) => (
+              <li key={a.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05] last:border-0">
+                <span className="w-2 h-2 rounded-full bg-royal-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-300 truncate">{a.action}</p>
+                  <p className="text-[11px] text-gray-600">{new Date(a.created_at).toLocaleString('ar')}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+
+      {/* Team + notifications */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        <Card className="p-6 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white">أعضاء الفريق</h3>
+            <span className="chip text-emerald-300 bg-emerald-500/10 border-emerald-500/30">{onlineCount} متصل الآن</span>
+          </div>
+          {!members.length && <EmptyState title="لا يوجد أعضاء" />}
+          <div className="grid sm:grid-cols-2 gap-3">
+            {members.map((m) => {
+              const meta = PRESENCE_META[m.status] || PRESENCE_META.offline;
+              return (
+                <div key={m.id} className="glass rounded-2xl p-4 flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white font-bold">
+                      {m.name?.charAt(0)}
+                    </div>
+                    <span className={`absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full border-2 border-navy-900 ${meta.dot}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{m.name}</p>
+                    <p className="text-[11px] text-gray-500">{meta.label}</p>
+                  </div>
+                  {m.active && (
+                    <div className="mr-auto text-left">
+                      <p className="text-[11px] text-gray-600">{m.current_task ? 'مهمة جارية' : '—'}</p>
+                      <p className="text-[11px] text-emerald-300 tabular-nums">
+                        {formatDuration(m.session_seconds).text}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Card>
-      )}
 
-      <Card className="mt-6 p-6">
-        <h3 className="font-bold text-gold-200 mb-4">آخر النشاطات</h3>
-        {!data?.recentActivity?.length && <EmptyState title="لا توجد نشاطات بعد" />}
-        <ul className="space-y-3">
-          {data?.recentActivity?.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-3 py-2 border-b border-dark-800 last:border-0">
-              <div className="flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-dark-800 flex items-center justify-center text-xs text-gold-400">
-                  ✦
-                </span>
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-white">الإشعارات</h3>
+            <span className="text-royal-300">◉</span>
+          </div>
+          {!data?.recentActivity?.length && <EmptyState title="لا توجد إشعارات" />}
+          <ul className="space-y-3">
+            {data?.recentActivity?.slice(0, 5).map((a) => (
+              <li key={`n-${a.id}`} className="flex gap-3 items-start">
+                <span className="mt-1.5 w-2 h-2 rounded-full bg-electric-400 shrink-0" />
                 <div>
                   <p className="text-sm text-gray-300">{a.action}</p>
-                  {a.details && <p className="text-xs text-gray-600">{a.details}</p>}
+                  <p className="text-[11px] text-gray-600">{a.details || ''}</p>
                 </div>
-              </div>
-              <span className="text-xs text-gray-600 shrink-0">{new Date(a.created_at).toLocaleString('ar')}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
     </>
   );
 }

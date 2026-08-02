@@ -56,20 +56,20 @@ export default function Lessons() {
               <Badge color={STATUS[l.status].color}>{STATUS[l.status].label}</Badge>
             </div>
             <div className="flex flex-wrap gap-2 mt-2 text-xs">
-              <span className="px-2 py-0.5 rounded-md bg-dark-800 text-gray-400 border border-dark-700">{TYPE[l.type]}</span>
-              {l.presenter && <span className="px-2 py-0.5 rounded-md bg-dark-800 text-gray-400 border border-dark-700">مقدم: {l.presenter}</span>}
-              {l.date && <span className="px-2 py-0.5 rounded-md bg-dark-800 text-gray-400 border border-dark-700">{new Date(l.date).toLocaleDateString('ar')}</span>}
-              {l.duration && <span className="px-2 py-0.5 rounded-md bg-dark-800 text-gray-400 border border-dark-700">{l.duration}</span>}
+              <span className="chip bg-white/[0.05] text-gray-400 border-white/10">{TYPE[l.type]}</span>
+              {l.presenter && <span className="chip bg-white/[0.05] text-gray-400 border-white/10">مقدم: {l.presenter}</span>}
+              {l.date && <span className="chip bg-white/[0.05] text-gray-400 border-white/10">{new Date(l.date).toLocaleDateString('ar')}</span>}
+              {l.duration && <span className="chip bg-white/[0.05] text-gray-400 border-white/10">{l.duration}</span>}
             </div>
             {l.description && <p className="text-sm text-gray-500 mt-3 flex-1">{l.description}</p>}
             {l.materials && (
               <a href={l.materials} target="_blank" rel="noreferrer"
-                className="mt-3 text-sm text-gold-500 hover:text-gold-400 flex items-center gap-1">
+                className="mt-3 text-sm text-electric-300 hover:text-electric-200 flex items-center gap-1">
                 الملفات والمواد ←
               </a>
             )}
             {canManage && (
-              <div className="mt-3 pt-3 border-t border-dark-800 flex gap-2">
+              <div className="mt-3 pt-3 border-t border-white/[0.06] flex gap-2">
                 <Button size="sm" variant="ghost"
                   onClick={() => { setForm({ title: l.title, description: l.description, type: l.type, presenter: l.presenter, date: l.date || '', duration: l.duration, materials: l.materials, notes: l.notes, status: l.status }); setModalId(l.id); setModal('edit'); }}>
                   تعديل

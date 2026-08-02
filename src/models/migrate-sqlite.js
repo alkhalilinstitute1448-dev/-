@@ -31,6 +31,9 @@ const SCHEMA = `
     role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin','user')),
     permissions TEXT NOT NULL DEFAULT '[]',
     active INTEGER NOT NULL DEFAULT 1,
+    last_seen TEXT,
+    last_lat REAL,
+    last_lng REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS tasks (
@@ -68,8 +71,16 @@ const SCHEMA = `
     check_out TEXT,
     status TEXT NOT NULL DEFAULT 'present' CHECK (status IN ('present','absent','late','leave')),
     notes TEXT DEFAULT '',
+    outside_since TEXT,
+    check_in_lat REAL,
+    check_in_lng REAL,
     UNIQUE (user_id, date)
   );
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('geo', '{"name":"جامع إبراهيم الخليل – مساكن برزة","lat":33.538,"lng":36.321,"radius":100,"margin":20,"grace_minutes":2}');
   CREATE TABLE IF NOT EXISTS captions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     platform TEXT NOT NULL DEFAULT 'facebook',
@@ -129,6 +140,43 @@ async function migrate() {
              VALUES (?, ?, ?, ?, ?)`,
             ['مدير النظام', 'admin', hash, 'admin', '[]']
           );
+        }
+      },
+    },
+    {
+      name: '003_geo_settings',
+      fn: async () => {
+        await q(
+          `CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          )`
+        );
+        await q(
+          `INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`,
+          [
+            'geo',
+            JSON.stringify({
+              name: 'جامع إبراهيم الخليل – مساكن برزة',
+              lat: 33.538,
+              lng: 36.321,
+              radius: 100,
+              margin: 20,
+              grace_minutes: 2,
+            }),
+          ]
+        );
+      },
+    },
+    {
+      name: '004_presence_columns',
+      fn: async () => {
+        const cols = ['last_seen', 'last_lat', 'last_lng'];
+        for (const c of cols) {
+          await q(`ALTER TABLE users ADD COLUMN ${c} TEXT`);
+        }
+        for (const c of ['outside_since', 'check_in_lat', 'check_in_lng', 'session_start', 'session_end']) {
+          await q(`ALTER TABLE attendance ADD COLUMN ${c} TEXT`);
         }
       },
     },

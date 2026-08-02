@@ -80,7 +80,7 @@ export default function Tasks() {
           <Card key={t.id} className="p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${t.status === 'completed' ? 'bg-emerald-500' : t.status === 'in_progress' ? 'bg-sky-500' : 'bg-gray-600'}`} />
+                <div className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${t.status === 'completed' ? 'bg-emerald-400' : t.status === 'in_progress' ? 'bg-electric-400' : 'bg-gray-600'}`} />
                 <div className="min-w-0">
                   <p className={`font-semibold text-gray-100 ${t.status === 'completed' ? 'line-through opacity-60' : ''}`}>{t.title}</p>
                   {t.description && <p className="text-sm text-gray-500 mt-0.5">{t.description}</p>}
@@ -96,7 +96,7 @@ export default function Tasks() {
               </div>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-dark-800 flex flex-wrap gap-2">
+            <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap gap-2">
               {t.status !== 'completed' && t.status !== 'cancelled' && (
                 <>
                   {t.status === 'pending' && (

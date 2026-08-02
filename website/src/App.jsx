@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import { Loader } from './components/ui';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Workspace from './pages/Workspace';
 import Profile from './pages/Profile';
 import Attendance from './pages/Attendance';
 import Tasks from './pages/Tasks';
@@ -29,6 +30,7 @@ function RoutesView() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<Protected perm="dashboard.view"><Dashboard /></Protected>} />
+      <Route path="/work" element={<Protected><Workspace /></Protected>} />
       <Route path="/profile" element={<Protected><Profile /></Protected>} />
       <Route path="/attendance" element={<Protected perm="attendance.view"><Attendance /></Protected>} />
       <Route path="/tasks" element={<Protected perm="tasks.view"><Tasks /></Protected>} />

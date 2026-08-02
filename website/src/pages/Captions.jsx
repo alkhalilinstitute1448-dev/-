@@ -71,19 +71,19 @@ export default function Captions() {
       <div className="grid gap-4 md:grid-cols-2">
         {data?.map((c) => (
           <Card key={c.id} className="p-5 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-gray-100">{c.name}</h3>
-              <Badge color="gold">{PLATFORMS.find((p) => p.key === c.platform)?.label || c.platform}</Badge>
+              <Badge color="indigo">{PLATFORMS.find((p) => p.key === c.platform)?.label || c.platform}</Badge>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed flex-1 whitespace-pre-wrap line-clamp-6">{c.text}</p>
             {(c.tags || []).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {(c.tags || []).map((t, i) => (
-                  <span key={i} className="text-[11px] px-2 py-0.5 rounded-md bg-dark-800 text-gray-500 border border-dark-700">#{t}</span>
+                  <span key={i} className="chip bg-white/[0.05] text-gray-500 border-white/10">#{t}</span>
                 ))}
               </div>
             )}
-            <div className="mt-3 pt-3 border-t border-dark-800 flex flex-wrap gap-2">
+            <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap gap-2">
               <Button size="sm" variant="secondary" onClick={() => copy(c.text, c.id)}>
                 {copied === c.id ? '✓ تم النسخ' : 'نسخ النص'}
               </Button>

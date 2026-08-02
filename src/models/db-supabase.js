@@ -216,6 +216,36 @@ async function migrate() {
         WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
       `,
     },
+    {
+      name: '005_geo_settings',
+      sql: `
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value JSONB NOT NULL
+        );
+        INSERT INTO settings (key, value)
+        SELECT 'geo', '{"name":"جامع إبراهيم الخليل – مساكن برزة","lat":33.538,"lng":36.321,"radius":100,"margin":20,"grace_minutes":2}'::jsonb
+        WHERE NOT EXISTS (SELECT 1 FROM settings WHERE key = 'geo');
+      `,
+    },
+    {
+      name: '006_presence_columns',
+      sql: `
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS last_lat DOUBLE PRECISION;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS last_lng DOUBLE PRECISION;
+        ALTER TABLE attendance ADD COLUMN IF NOT EXISTS outside_since TIMESTAMPTZ;
+        ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_in_lat DOUBLE PRECISION;
+        ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_in_lng DOUBLE PRECISION;
+      `,
+    },
+    {
+      name: '007_session_timestamps',
+      sql: `
+        ALTER TABLE attendance ADD COLUMN IF NOT EXISTS session_start TIMESTAMPTZ;
+        ALTER TABLE attendance ADD COLUMN IF NOT EXISTS session_end TIMESTAMPTZ;
+      `,
+    },
   ];
 
   const isNetworkErr = (err) =>

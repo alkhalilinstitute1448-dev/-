@@ -63,9 +63,9 @@ export default function Archive() {
             </div>
             {a.date && <p className="text-xs text-gray-600 mt-1">{new Date(a.date).toLocaleDateString('ar')}</p>}
             {a.description && <p className="text-sm text-gray-500 mt-2 flex-1">{a.description}</p>}
-            <div className="mt-3 pt-3 border-t border-dark-800 flex items-center gap-2">
+            <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2">
               {a.url && (
-                <a href={a.url} target="_blank" rel="noreferrer" className="text-sm text-gold-500 hover:text-gold-400">
+                <a href={a.url} target="_blank" rel="noreferrer" className="text-sm text-electric-300 hover:text-electric-200">
                   فتح الرابط ←
                 </a>
               )}

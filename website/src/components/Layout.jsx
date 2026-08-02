@@ -1,26 +1,34 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSession } from '../context/SessionContext';
+import { Button } from './ui';
 
 const NAV = [
-  { to: '/', key: 'dashboard.view', icon: '◈', label: 'لوحة التحكم' },
-  { to: '/profile', icon: '♟', label: 'صفحة العضو', always: true },
+  { to: '/', key: 'dashboard.view', icon: '◈', label: 'لوحة التحكم', end: true },
+  { to: '/work', key: '', icon: '⚙', label: 'وضع العمل', always: true },
+  { to: '/users', key: 'users.view', icon: '✧', label: 'أعضاء الفريق' },
   { to: '/attendance', key: 'attendance.view', icon: '◷', label: 'الحضور والانصراف' },
   { to: '/tasks', key: 'tasks.view', icon: '✓', label: 'المهام' },
   { to: '/lessons', key: 'lessons.view', icon: '▤', label: 'الدروس' },
   { to: '/captions', key: 'captions.view', icon: '❝', label: 'الكابشنات' },
   { to: '/reports', key: 'reports.view', icon: '☰', label: 'التقارير' },
   { to: '/archive', key: 'archive.view', icon: '▣', label: 'الأرشيف' },
-  { to: '/users', key: 'users.view', icon: '✧', label: 'إدارة المستخدمين' },
   { to: '/assistant', key: 'assistant.view', icon: '✦', label: 'المساعد الذكي' },
 ];
 
 export default function Layout({ children }) {
   const { user, logout, can } = useAuth();
+  const { status, toast, leaveNotice, dismissLeaveNotice, endSession } = useSession();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const items = NAV.filter((n) => n.always || can(n.key));
+
+  const dotColor =
+    status === 'in_room' ? 'bg-emerald-400 shadow-glow-green' : status === 'leaving' || status === 'online' ? 'bg-amber-400' : 'bg-gray-600';
+  const statusLabel =
+    status === 'in_room' ? 'داخل غرفة الإعلام' : status === 'leaving' ? 'خارج النطاق' : status === 'no_permission' ? 'بدون موقع' : 'خارج العمل';
 
   const handleLogout = () => {
     logout();
@@ -28,30 +36,36 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-dark-950" dir="rtl">
+    <div className="min-h-screen" dir="rtl">
       <aside
-        className={`fixed inset-y-0 right-0 z-40 w-64 transform bg-dark-900/95 border-l border-dark-700/60 backdrop-blur transition-transform duration-200 flex flex-col ${
+        className={`fixed inset-y-0 right-0 z-40 w-64 glass-strong border-l-0 border-r border-white/[0.08] transform transition-transform duration-300 flex flex-col ${
           open ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="px-6 py-6 border-b border-dark-700/60">
-          <div className="text-xl font-extrabold text-gold-200">
-            AL-KHALIL MEDIA <span className="text-gold-500">✦</span>
-          </div>
-          <p className="text-xs text-gray-600 mt-1">نظام إدارة الفريق الإعلامي</p>
+        <div className="px-6 py-7 border-b border-white/[0.08]">
+          <NavLink to="/" className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-glow">
+              ✦
+            </div>
+            <div>
+              <div className="text-base font-extrabold text-white leading-tight">Al-Khalil Media</div>
+              <div className="text-[11px] text-gray-500">نظام إدارة الفريق الإعلامي</div>
+            </div>
+          </NavLink>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+
+        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
           {items.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
-              end={n.to === '/'}
+              end={n.end}
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-colors ${
+                `flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm transition-all duration-200 ${
                   isActive
-                    ? 'bg-gold-500/10 text-gold-300 border border-gold-500/25'
-                    : 'text-gray-400 hover:bg-dark-800 hover:text-gold-200 border border-transparent'
+                    ? 'bg-royal-500/15 text-white border border-royal-400/25 shadow-inner'
+                    : 'text-gray-400 hover:bg-white/[0.05] hover:text-gray-200 border border-transparent'
                 }`
               }
             >
@@ -60,45 +74,95 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-dark-700/60">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-gold-500/15 border border-gold-500/30 flex items-center justify-center text-gold-300 font-bold">
-              {user?.name?.charAt(0) || 'م'}
+
+        <div className="p-4 border-t border-white/[0.08]">
+          <div className="glass rounded-2xl p-3.5">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+                  {user?.name?.charAt(0) || 'م'}
+                </div>
+                <span className={`absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full border-2 border-navy-900 ${dotColor}`} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
+                <p className="text-[11px] text-royal-300">{user?.role === 'admin' ? 'مدير' : 'عضو'}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-200 truncate">{user?.name}</p>
-              <p className="text-xs text-gold-500/80">{user?.role === 'admin' ? 'مدير' : 'عضو'}</p>
+            <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-[11px] text-gray-500">{statusLabel}</span>
+              <div className="flex gap-1">
+                <NavLink to="/profile" className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.06] transition-colors" title="صفحة العضو">
+                  ♟
+                </NavLink>
+                <button onClick={handleLogout} className="p-1.5 rounded-lg text-gray-500 hover:text-red-300 hover:bg-red-500/10 transition-colors" title="تسجيل الخروج">
+                  ⏻
+                </button>
+              </div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm bg-dark-800 text-gray-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-          >
-            تسجيل الخروج
-          </button>
         </div>
       </aside>
 
-      {open && (
-        <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setOpen(false)} />
-      )}
+      {open && <div className="fixed inset-0 z-30 bg-navy-950/60 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />}
 
-      <div className="lg:mr-64">
-        <header className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-6 py-4 bg-dark-950/80 backdrop-blur border-b border-dark-800">
+      <div className="lg:mr-64 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-8 py-4 backdrop-blur-xl bg-navy-950/60 border-b border-white/[0.06]">
           <button
             onClick={() => setOpen(true)}
-            className="lg:hidden px-3 py-2 rounded-lg bg-dark-800 text-gold-300 text-lg"
+            className="lg:hidden px-3 py-2 rounded-xl bg-white/[0.06] text-electric-300 text-lg"
             aria-label="القائمة"
           >
             ☰
           </button>
           <div className="text-sm text-gray-500 hidden sm:block">
-            أهلاً بك، <span className="text-gold-300">{user?.name}</span>
+            أهلاً بك، <span className="text-white">{user?.name}</span>
           </div>
-          <div className="text-gold-400 text-sm font-semibold">✦ AL-KHALIL MEDIA</div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <span className="text-royal-400">✦</span> Al-Khalil Media
+          </div>
         </header>
-        <main className="px-4 sm:px-6 py-6 max-w-6xl mx-auto">{children}</main>
+        <main className="flex-1 px-4 sm:px-8 py-7 max-w-6xl w-full mx-auto">{children}</main>
+        <footer className="px-8 py-5 text-center text-[11px] text-gray-700 border-t border-white/[0.04]">
+          Al-Khalil Media ✦ نظام إدارة الفريق الإعلامي
+        </footer>
       </div>
+
+      {leaveNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl">
+          <div className="absolute inset-0 bg-navy-950/80 backdrop-blur-sm" onClick={dismissLeaveNotice} />
+          <div className="relative w-full max-w-md rounded-3xl glass-strong shadow-glass-lg p-7 text-center animate-[fadeIn_.2s_ease]">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-2xl mb-4">
+              ⚠
+            </div>
+            <h3 className="text-lg font-bold text-white">غادرت نطاق غرفة الإعلام</h3>
+            <p className="text-gray-400 text-sm mt-3 leading-relaxed">
+              يبدو أنك غادرت غرفة الإعلام. هل تريد إنهاء جلسة العمل؟
+              <br />
+              <span className="text-gray-600">إذا عدت إلى النطاق سيستمر العمل تلقائيًا.</span>
+            </p>
+            <div className="flex gap-3 mt-6">
+              <Button variant="danger" className="flex-1" onClick={endSession}>إنهاء جلسة العمل</Button>
+              <Button variant="secondary" className="flex-1" onClick={dismissLeaveNotice}>
+                سأعود قريبًا
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div
+          className="fixed bottom-6 right-1/2 translate-x-1/2 z-[60] px-5 py-3.5 rounded-2xl glass-strong border shadow-glass-lg text-sm animate-[fadeInUp_.3s_ease]"
+          style={{
+            borderColor:
+              toast.type === 'success' ? 'rgba(16,185,129,0.4)' : toast.type === 'warning' ? 'rgba(245,158,11,0.4)' : 'rgba(79,107,242,0.4)',
+            color: toast.type === 'success' ? '#6ee7b7' : toast.type === 'warning' ? '#fcd34d' : '#c7d2fe',
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
