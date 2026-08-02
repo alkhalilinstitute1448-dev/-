@@ -36,6 +36,9 @@ export function SessionProvider({ children }) {
   const sessionRef = useRef(null);
   const geoRef = useRef(null);
   const lastFixedRef = useRef(null);
+  const lastHeartbeatInsideRef = useRef(null);
+  const lastCheckinAttemptRef = useRef(0);
+  const coordsRef = useRef(null);
 
   sessionRef.current = session;
   geoRef.current = geo;
@@ -118,10 +121,22 @@ export function SessionProvider({ children }) {
       const g = geoRef.current;
       if (!g) return;
       const dist = distanceMeters(lat, lng, g.lat, g.lng);
-      setCoords({ lat, lng });
-      setDistance(Math.round(dist));
+      const rounded = Math.round(dist);
       const inside = dist <= g.radius + g.margin;
-      setInRoom(inside);
+
+      const prevDist = lastFixedRef.current_dist ?? -1;
+      const prevInside = lastFixedRef.current_inside === true;
+      const meaningful = Math.abs(rounded - prevDist) > 3 || inside !== prevInside;
+      lastFixedRef.current_dist = rounded;
+      lastFixedRef.current_inside = inside;
+
+      if (meaningful) {
+        coordsRef.current = { lat, lng };
+        setCoords({ lat, lng });
+        setDistance(rounded);
+        setInRoom(inside);
+      }
+
       const cur = sessionRef.current;
 
       if (inside) {
@@ -132,8 +147,9 @@ export function SessionProvider({ children }) {
         }
         if (cur && cur.check_in && !cur.check_out) {
           setStatus('in_room');
-        } else if (!checkingInRef.current) {
+        } else if (!checkingInRef.current && Date.now() - lastCheckinAttemptRef.current > 30000) {
           checkingInRef.current = true;
+          lastCheckinAttemptRef.current = Date.now();
           api
             .post('/attendance/check-in', { lat, lng })
             .then(({ data }) => {
@@ -160,11 +176,12 @@ export function SessionProvider({ children }) {
         }
       }
 
-      // throttled heartbeat (every 25s) or on significant movement
+      // throttled heartbeat (every 25s) or on inside-state change since last send
       const now = Date.now();
-      if (!lastFixedRef.current || now - lastFixedRef.current > 25000 || inside !== (lastFixedRef.current_inside === true)) {
+      const stateChanged = lastHeartbeatInsideRef.current !== null && inside !== lastHeartbeatInsideRef.current;
+      if (!lastFixedRef.current || now - lastFixedRef.current > 25000 || stateChanged) {
         lastFixedRef.current = now;
-        lastFixedRef.current_inside = inside;
+        lastHeartbeatInsideRef.current = inside;
         sendHeartbeat(lat, lng);
       }
     },
@@ -208,7 +225,8 @@ export function SessionProvider({ children }) {
     }, 1000);
 
     const hb = setInterval(() => {
-      if (coords) sendHeartbeat(coords.lat, coords.lng);
+      const c = coordsRef.current;
+      if (c) sendHeartbeat(c.lat, c.lng);
     }, 30000);
     heartbeatRef.current = hb;
 
@@ -237,7 +255,6 @@ export function SessionProvider({ children }) {
         endSession,
         dismissLeaveNotice,
         showToast,
-        setLeaveNotice,
       }}
     >
       {children}

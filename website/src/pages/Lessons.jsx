@@ -71,7 +71,7 @@ export default function Lessons() {
             {canManage && (
               <div className="mt-3 pt-3 border-t border-white/[0.06] flex gap-2">
                 <Button size="sm" variant="ghost"
-                  onClick={() => { setForm({ title: l.title, description: l.description, type: l.type, presenter: l.presenter, date: l.date || '', duration: l.duration, materials: l.materials, notes: l.notes, status: l.status }); setModalId(l.id); setModal('edit'); }}>
+                  onClick={() => { setError(''); setForm({ title: l.title, description: l.description, type: l.type, presenter: l.presenter, date: l.date || '', duration: l.duration, materials: l.materials, notes: l.notes, status: l.status }); setModalId(l.id); setModal('edit'); }}>
                   تعديل
                 </Button>
                 <Button size="sm" variant="danger"

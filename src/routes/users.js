@@ -21,6 +21,9 @@ router.post('/', verifyToken, requirePermission('users.manage'), async (req, res
   if (!name || !username || !password) {
     return res.status(400).json({ error: 'الاسم واسم المستخدم وكلمة المرور مطلوبة' });
   }
+  if (String(password).length < 6) {
+    return res.status(400).json({ error: 'كلمة المرور يجب ألا تقل عن ٦ أحرف' });
+  }
   try {
     const hash = await bcrypt.hash(password, 10);
     const { rows } = await query(
@@ -70,6 +73,9 @@ router.put('/:id/permissions', verifyToken, requirePermission('users.manage'), a
 router.put('/:id/reset-password', verifyToken, requirePermission('users.manage'), async (req, res) => {
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: 'كلمة المرور مطلوبة' });
+  if (String(password).length < 6) {
+    return res.status(400).json({ error: 'كلمة المرور يجب ألا تقل عن ٦ أحرف' });
+  }
   try {
     const hash = await bcrypt.hash(password, 10);
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.params.id]);
@@ -81,7 +87,16 @@ router.put('/:id/reset-password', verifyToken, requirePermission('users.manage')
 });
 
 router.delete('/:id', verifyToken, requirePermission('users.manage'), async (req, res) => {
+  if (String(req.params.id) === String(req.user.id)) {
+    return res.status(400).json({ error: 'لا يمكنك حذف حسابك الحالي' });
+  }
   try {
+    const { rows } = await query('SELECT role FROM users WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'المستخدم غير موجود' });
+    if (rows[0].role === 'admin') {
+      const { rows: admins } = await query("SELECT COUNT(*)::int AS c FROM users WHERE role = 'admin' AND active = TRUE");
+      if (admins[0].c <= 1) return res.status(400).json({ error: 'لا يمكن حذف آخر مدير في النظام' });
+    }
     await query('DELETE FROM users WHERE id = $1', [req.params.id]);
     await logActivity(req.user.id, 'حذف مستخدمًا', 'users', req.params.id);
     res.json({ ok: true });

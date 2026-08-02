@@ -4,7 +4,7 @@ import api from '../api';
 import {
   Card, Loader, PageHeader, Button, Input, Modal, Badge, Alert, EmptyState, StatCard,
 } from '../components/ui';
-import { PERMISSIONS, permissionLabel } from '../utils/permissions';
+import { PERMISSIONS } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';
 import { formatDuration } from '../utils/time';
 
@@ -60,6 +60,18 @@ export default function Users() {
   };
 
   const saveUser = async () => {
+    if (!form.name.trim() || !form.username.trim()) {
+      setError('الاسم واسم المستخدم مطلوبان');
+      return;
+    }
+    if (!form.password) {
+      setError('كلمة المرور مطلوبة لعضو جديد');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('كلمة المرور يجب ألا تقل عن ٦ أحرف');
+      return;
+    }
     const r = await run(() => api.post('/users', form));
     if (r.ok) { setModal(null); reload(); } else setError(r.error);
   };
@@ -71,6 +83,7 @@ export default function Users() {
 
   const resetPass = async () => {
     if (!newPass) return;
+    if (newPass.length < 6) { setError('كلمة المرور يجب ألا تقل عن ٦ أحرف'); return; }
     const r = await run(() => api.put(`/users/${resetUser.id}/reset-password`, { password: newPass }));
     if (r.ok) { setResetUser(null); setNewPass(''); } else setError(r.error);
   };
@@ -224,10 +237,11 @@ export default function Users() {
           <Button variant="ghost" onClick={() => setModal(null)}>إلغاء</Button>
           <Button onClick={saveUser} disabled={mut}>{mut ? '...' : 'حفظ'}</Button>
         </>}>
+        {error && <div className="mb-4"><Alert type="error">{error}</Alert></div>}
         <div className="space-y-4">
           <Input label="الاسم الكامل" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <Input label="اسم المستخدم" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <Input label="كلمة المرور" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <Input label="كلمة المرور" type="password" hint="٦ أحرف على الأقل" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           <div className="flex gap-2">
             <button onClick={() => setForm({ ...form, role: 'user' })}
               className={`flex-1 px-4 py-2.5 rounded-2xl text-sm border transition-all ${form.role === 'user' ? 'bg-royal-500/15 border-royal-400/40 text-white' : 'bg-navy-900/70 border-white/10 text-gray-500'}`}>
@@ -275,7 +289,7 @@ export default function Users() {
           <Button variant="ghost" onClick={() => setResetUser(null)}>إلغاء</Button>
           <Button onClick={resetPass} disabled={mut || !newPass}>{mut ? '...' : 'حفظ'}</Button>
         </>}>
-        <Input label="كلمة المرور الجديدة" type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} />
+        <Input label="كلمة المرور الجديدة" type="password" hint="٦ أحرف على الأقل" value={newPass} onChange={(e) => setNewPass(e.target.value)} />
       </Modal>
     </>
   );

@@ -29,7 +29,7 @@ export function Button({ variant = 'primary', size = 'md', className = '', child
   };
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 transition-all duration-200 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-royal-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950 active:scale-[0.97] ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
       {children}

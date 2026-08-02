@@ -58,10 +58,19 @@ export default function Dashboard() {
       <PageHeader title="لوحة التحكم" subtitle="مركز عمل الفريق الإعلامي — حالة حية" />
 
       {/* Hero status + timer */}
-      <Card className="p-6 sm:p-8 mb-6 overflow-hidden relative">
+      <Card className="p-6 sm:p-8 lg:p-10 mb-6 overflow-hidden relative border-white/[0.1]">
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(600px 220px at 15% 0%, rgba(43,71,221,0.18), transparent 60%)' }}
+          style={{
+            background:
+              'radial-gradient(700px 260px at 18% 0%, rgba(63,107,255,0.2), transparent 60%), radial-gradient(500px 240px at 90% 110%, rgba(110,168,255,0.1), transparent 60%)',
+          }}
+        />
+        <img
+          src="/logo.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute -left-10 -bottom-14 w-56 h-56 object-contain opacity-[0.05] pointer-events-none"
         />
         <div className="relative flex flex-col lg:flex-row lg:items-center gap-8">
           {/* Status section */}
@@ -72,9 +81,13 @@ export default function Dashboard() {
                   <span className="w-4 h-4 rounded-full bg-emerald-400 animate-[pulseSoft_2.2s_infinite]" />
                   <span className="text-emerald-300 font-semibold text-lg">داخل غرفة الإعلام</span>
                 </div>
-                <p className="text-white text-xl font-bold mt-3">تم تسجيل حضورك بنجاح ✦</p>
-                <p className="text-gray-400 mt-2 flex items-center gap-2 text-sm">
+                <p className="text-white text-2xl font-extrabold mt-3 tracking-tight">تم تسجيل حضورك بنجاح ✦</p>
+                <p className="text-gray-400 mt-2.5 flex items-center gap-2 text-sm">
                   <span className="text-royal-400">◉</span> {geo?.name || 'غرفة الإعلام'}
+                  <span className="text-gray-700">·</span>
+                  <span className="text-gray-500">
+                    نصف القطر {geo?.radius} م + هامش {geo?.margin} م
+                  </span>
                 </p>
               </>
             ) : (
@@ -100,15 +113,15 @@ export default function Dashboard() {
           </div>
 
           {/* Timer + end session */}
-          <div className="shrink-0 flex flex-col items-center gap-4">
+          <div className="shrink-0 flex flex-col items-center gap-5">
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-2 tracking-wide">مدة جلسة العمل</div>
+              <div className="text-xs text-gray-500 mb-3 tracking-wide">مدة جلسة العمل</div>
               <div className="font-extrabold text-white leading-none text-5xl sm:text-6xl lg:text-7xl tabular-nums">
                 {active ? duration.text : '—'}
               </div>
             </div>
             {active && (
-              <Button variant="danger" size="lg" onClick={endSession}>إنهاء جلسة العمل</Button>
+              <Button variant="danger" size="lg" className="px-8" onClick={endSession}>إنهاء جلسة العمل</Button>
             )}
           </div>
         </div>
@@ -121,7 +134,7 @@ export default function Dashboard() {
         <StatCard icon="✓" label="المهام الحالية" value={s?.tasks?.in_progress ?? 0} accent="indigo" to={can('tasks.view') ? '/tasks' : undefined} />
         <StatCard icon="⚠" label="مهام متأخرة" value={s?.tasks?.overdue ?? 0} accent="amber" to={can('tasks.view') ? '/tasks' : undefined} />
         <StatCard icon="⌛" label="ساعات العمل اليوم" value={s?.work_hours_today ?? 0} accent="electric" sub="ساعة" />
-        <StatCard icon="▤" label="الدرس القادم" value={s?.next_lesson ? '1' : '0'} accent="royal" to={can('lessons.view') ? '/lessons' : undefined} sub={s?.next_lesson?.title || 'لا يوجد'} />
+        <StatCard icon="▤" label="الدرس القادم" value={s?.next_lesson ? s?.next_lesson?.type === 'live' ? 'بث' : 'درس' : '—'} accent="royal" to={can('lessons.view') ? '/lessons' : undefined} sub={s?.next_lesson?.title || 'لا يوجد'} />
       </div>
 
       {/* 3 big cards */}

@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSession } from '../context/SessionContext';
 import { Button } from './ui';
+import Logo from './Logo';
 
 const NAV = [
   { to: '/', key: 'dashboard.view', icon: '◈', label: 'لوحة التحكم', end: true },
@@ -38,19 +39,13 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen" dir="rtl">
       <aside
-        className={`fixed inset-y-0 right-0 z-40 w-64 glass-strong border-l-0 border-r border-white/[0.08] transform transition-transform duration-300 flex flex-col ${
+        className={`fixed inset-y-0 right-0 z-40 w-64 bg-navy-900/85 backdrop-blur-2xl border-r border-white/[0.07] transform transition-transform duration-300 flex flex-col ${
           open ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="px-6 py-7 border-b border-white/[0.08]">
-          <NavLink to="/" className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-glow">
-              ✦
-            </div>
-            <div>
-              <div className="text-base font-extrabold text-white leading-tight">Al-Khalil Media</div>
-              <div className="text-[11px] text-gray-500">نظام إدارة الفريق الإعلامي</div>
-            </div>
+        <div className="px-5 py-6 border-b border-white/[0.07]">
+          <NavLink to="/" className="block" onClick={() => setOpen(false)}>
+            <Logo size="md" />
           </NavLink>
         </div>
 
@@ -75,8 +70,8 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/[0.08]">
-          <div className="glass rounded-2xl p-3.5">
+        <div className="p-4 border-t border-white/[0.07]">
+          <div className="bg-navy-850/70 backdrop-blur-md rounded-2xl p-3.5 border border-white/[0.06]">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
@@ -107,7 +102,7 @@ export default function Layout({ children }) {
       {open && <div className="fixed inset-0 z-30 bg-navy-950/60 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />}
 
       <div className="lg:mr-64 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-8 py-4 backdrop-blur-xl bg-navy-950/60 border-b border-white/[0.06]">
+        <header className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-8 py-4 bg-navy-950/70 backdrop-blur-xl border-b border-white/[0.06]">
           <button
             onClick={() => setOpen(true)}
             className="lg:hidden px-3 py-2 rounded-xl bg-white/[0.06] text-electric-300 text-lg"
@@ -115,14 +110,19 @@ export default function Layout({ children }) {
           >
             ☰
           </button>
-          <div className="text-sm text-gray-500 hidden sm:block">
-            أهلاً بك، <span className="text-white">{user?.name}</span>
+          <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
+            <span className="text-gray-600">أهلاً بك،</span>
+            <span className="text-white font-semibold">{user?.name}</span>
+            <span className="mx-2 text-gray-700">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${status === 'in_room' ? 'bg-emerald-400' : 'bg-gray-600'}`} />
+              {statusLabel}
+            </span>
           </div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <span className="text-royal-400">✦</span> Al-Khalil Media
-          </div>
+          <Logo size="sm" showText={false} />
         </header>
-        <main className="flex-1 px-4 sm:px-8 py-7 max-w-6xl w-full mx-auto">{children}</main>
+
+        <main className="flex-1 px-4 sm:px-8 py-7 max-w-6xl w-full mx-auto page-enter">{children}</main>
         <footer className="px-8 py-5 text-center text-[11px] text-gray-700 border-t border-white/[0.04]">
           Al-Khalil Media ✦ نظام إدارة الفريق الإعلامي
         </footer>
@@ -156,7 +156,7 @@ export default function Layout({ children }) {
           className="fixed bottom-6 right-1/2 translate-x-1/2 z-[60] px-5 py-3.5 rounded-2xl glass-strong border shadow-glass-lg text-sm animate-[fadeInUp_.3s_ease]"
           style={{
             borderColor:
-              toast.type === 'success' ? 'rgba(16,185,129,0.4)' : toast.type === 'warning' ? 'rgba(245,158,11,0.4)' : 'rgba(79,107,242,0.4)',
+              toast.type === 'success' ? 'rgba(34,197,94,0.4)' : toast.type === 'warning' ? 'rgba(245,158,11,0.4)' : 'rgba(88,101,242,0.4)',
             color: toast.type === 'success' ? '#6ee7b7' : toast.type === 'warning' ? '#fcd34d' : '#c7d2fe',
           }}
         >

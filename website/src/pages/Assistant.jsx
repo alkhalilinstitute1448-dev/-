@@ -1,11 +1,9 @@
 import React from 'react';
 import { useData } from '../hooks/useData';
 import api from '../api';
-import { Card, Loader, PageHeader, Button } from '../components/ui';
-import { useAuth } from '../context/AuthContext';
+import { Card, Loader, PageHeader } from '../components/ui';
 
 export default function Assistant() {
-  const { user } = useAuth();
   const { data, loading } = useData(() => api.get('/assistant'));
 
   if (loading) return <Loader />;
@@ -29,7 +27,6 @@ export default function Assistant() {
           <span className="w-2 h-2 rounded-full bg-royal-400 animate-pulse" />
           <span className="text-xs text-royal-300">ميزة قادمة</span>
         </div>
-        <Button variant="outline" disabled>غير متاح حاليًا</Button>
       </Card>
     </>
   );

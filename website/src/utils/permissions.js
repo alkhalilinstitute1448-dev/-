@@ -15,8 +15,6 @@ export const PERMISSIONS = [
   { key: 'assistant.view', label: 'المساعد الذكي' },
 ];
 
-export const PERMISSION_KEYS = PERMISSIONS.map((p) => p.key);
-
 export function permissionLabel(key) {
   return PERMISSIONS.find((p) => p.key === key)?.label || key;
 }

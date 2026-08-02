@@ -10,21 +10,3 @@ export function formatDuration(seconds) {
   if (minutes > 0) return { text: `${minutes} د ${String(secs).padStart(2, '0')} ث`, parts: { minutes, secs } };
   return { text: `${secs} ث`, parts: { secs } };
 }
-
-export function formatClock(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '—';
-  }
-}
-
-export function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleDateString('ar', { day: 'numeric', month: 'short', year: 'numeric' });
-  } catch {
-    return '—';
-  }
-}

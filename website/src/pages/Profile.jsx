@@ -8,7 +8,7 @@ import { permissionLabel } from '../utils/permissions';
 import { formatDuration } from '../utils/time';
 
 export default function Profile() {
-  const { user, refresh } = useAuth();
+  const { user } = useAuth();
   const { status, sessionSeconds, geo, requestLocation } = useSession();
   const { run, loading, error, setError } = useMutation();
   const [passwords, setPasswords] = useState({ current: '', newPassword: '' });
@@ -19,6 +19,10 @@ export default function Profile() {
   const changePassword = async () => {
     setOk('');
     setError('');
+    if (passwords.newPassword.length < 6) {
+      setError('كلمة المرور الجديدة يجب ألا تقل عن ٦ أحرف');
+      return;
+    }
     const r = await run(() => api.put('/auth/password', passwords));
     if (r.ok) {
       setOk('تم تغيير كلمة المرور بنجاح');
@@ -96,7 +100,7 @@ export default function Profile() {
           <div className="space-y-4">
             <Input label="كلمة المرور الحالية" type="password" value={passwords.current}
               onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} />
-            <Input label="كلمة المرور الجديدة" type="password" value={passwords.newPassword}
+            <Input label="كلمة المرور الجديدة" type="password" hint="٦ أحرف على الأقل" value={passwords.newPassword}
               onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} />
             <Button onClick={changePassword} disabled={loading || !passwords.current || !passwords.newPassword}>
               {loading ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}

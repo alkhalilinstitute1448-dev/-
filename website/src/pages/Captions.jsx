@@ -90,7 +90,7 @@ export default function Captions() {
               {canManage && (
                 <>
                   <Button size="sm" variant="ghost"
-                    onClick={() => { setForm({ platform: c.platform, name: c.name, text: c.text, tags: (c.tags || []).join(', ') }); setModalId(c.id); setModal('edit'); }}>
+                    onClick={() => { setError(''); setForm({ platform: c.platform, name: c.name, text: c.text, tags: (c.tags || []).join(', ') }); setModalId(c.id); setModal('edit'); }}>
                     تعديل
                   </Button>
                   <Button size="sm" variant="danger"

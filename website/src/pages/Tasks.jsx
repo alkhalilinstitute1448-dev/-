@@ -108,7 +108,7 @@ export default function Tasks() {
               {canManage && (
                 <>
                   <Button size="sm" variant="ghost"
-                    onClick={() => { setForm({ title: t.title, description: t.description, assigned_to: t.assigned_to || '', priority: t.priority, status: t.status, due_date: t.due_date || '', notes: t.notes }); setModalId(t.id); setModal('edit'); }}>
+                    onClick={() => { setError(''); setForm({ title: t.title, description: t.description, assigned_to: t.assigned_to || '', priority: t.priority, status: t.status, due_date: t.due_date || '', notes: t.notes }); setModalId(t.id); setModal('edit'); }}>
                     تعديل
                   </Button>
                   <Button size="sm" variant="danger"

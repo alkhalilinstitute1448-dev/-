@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SessionProvider } from './context/SessionContext';
 import Layout from './components/Layout';
 import { Loader } from './components/ui';
 import Login from './pages/Login';
@@ -48,9 +49,11 @@ function RoutesView() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <RoutesView />
-      </BrowserRouter>
+      <SessionProvider>
+        <BrowserRouter>
+          <RoutesView />
+        </BrowserRouter>
+      </SessionProvider>
     </AuthProvider>
   );
 }
