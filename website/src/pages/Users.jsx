@@ -9,8 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatDuration } from '../utils/time';
 
 const PRESENCE_META = {
-  in_room: { label: 'داخل غرفة الإعلام', color: 'green', dot: 'bg-emerald-400', icon: '🟢' },
-  outside: { label: 'متصل خارج غرفة الإعلام', color: 'orange', dot: 'bg-amber-400', icon: '🟡' },
+  in_room: { label: 'في جلسة عمل', color: 'green', dot: 'bg-emerald-400', icon: '🟢' },
   online: { label: 'متصل', color: 'blue', dot: 'bg-electric-400', icon: '🟡' },
   offline: { label: 'غير متصل', color: 'gray', dot: 'bg-gray-600', icon: '⚫' },
 };
@@ -29,14 +28,6 @@ export default function Users() {
   const [resetUser, setResetUser] = useState(null);
   const [newPass, setNewPass] = useState('');
   const [error, setError] = useState('');
-
-  const [geo, setGeo] = useState(null);
-  const [geoLoading, setGeoLoading] = useState(false);
-  const [geoSaved, setGeoSaved] = useState(false);
-
-  useEffect(() => {
-    api.get('/settings').then(({ data }) => setGeo(data.geo)).catch(() => {});
-  }, []);
 
   useEffect(() => {
     const t = setInterval(() => presence.reload(), 15000);
@@ -88,25 +79,9 @@ export default function Users() {
     if (r.ok) { setResetUser(null); setNewPass(''); } else setError(r.error);
   };
 
-  const saveGeo = async () => {
-    if (!geo) return;
-    setGeoLoading(true);
-    setGeoSaved(false);
-    const r = await run(() => api.put('/settings/geo', {
-      name: geo.name,
-      lat: Number(geo.lat),
-      lng: Number(geo.lng),
-      radius: Number(geo.radius),
-      margin: Number(geo.margin),
-      grace_minutes: Number(geo.grace_minutes),
-    }));
-    if (r.ok) setGeoSaved(true);
-    setGeoLoading(false);
-  };
-
   const stats = {
     inRoom: (presence.data || []).filter((p) => p.status === 'in_room').length,
-    online: (presence.data || []).filter((p) => p.status === 'online' || p.status === 'outside').length,
+    online: (presence.data || []).filter((p) => p.status === 'online').length,
     offline: (presence.data || []).filter((p) => p.status === 'offline').length,
   };
 
@@ -114,7 +89,7 @@ export default function Users() {
     <>
       <PageHeader
         title="أعضاء الفريق"
-        subtitle="الحالة المباشرة لكل عضو في غرفة الإعلام"
+        subtitle="الحالة المباشرة لكل عضو"
         actions={isAdmin && <Button onClick={openNew}>+ إضافة عضو</Button>}
       />
 
@@ -122,36 +97,10 @@ export default function Users() {
 
       {/* Live status stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <StatCard icon="🟢" label="داخل غرفة الإعلام" value={stats.inRoom} accent="emerald" />
-        <StatCard icon="🟡" label="متصل خارج الغرفة" value={stats.online} accent="amber" />
+        <StatCard icon="🟢" label="في جلسة عمل" value={stats.inRoom} accent="emerald" />
+        <StatCard icon="🟡" label="متصل" value={stats.online} accent="amber" />
         <StatCard icon="⚫" label="غير متصل" value={stats.offline} accent="gray" />
       </div>
-
-      {/* Geo config (admin) */}
-      {isAdmin && geo && (
-        <Card className="p-6 mb-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className="font-bold text-white">النطاق الجغرافي للحضور</h3>
-              <p className="text-sm text-gray-500 mt-1">يُسجَّل الحضور فقط داخل هذا النطاق</p>
-            </div>
-            {geoSaved && <Badge color="green">تم الحفظ ✓</Badge>}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-3">
-              <Input label="اسم الموقع" value={geo.name} onChange={(e) => setGeo({ ...geo, name: e.target.value })} />
-            </div>
-            <Input label="خط العرض (Latitude)" value={geo.lat} onChange={(e) => setGeo({ ...geo, lat: e.target.value })} />
-            <Input label="خط الطول (Longitude)" value={geo.lng} onChange={(e) => setGeo({ ...geo, lng: e.target.value })} />
-            <Input label="نصف القطر (متر)" type="number" value={geo.radius} onChange={(e) => setGeo({ ...geo, radius: e.target.value })} />
-            <Input label="هامش خطأ GPS (متر)" type="number" value={geo.margin} onChange={(e) => setGeo({ ...geo, margin: e.target.value })} />
-            <Input label="مهلة المغادرة (دقيقة)" type="number" value={geo.grace_minutes} onChange={(e) => setGeo({ ...geo, grace_minutes: e.target.value })} />
-            <div className="flex items-end">
-              <Button onClick={saveGeo} disabled={geoLoading}>{geoLoading ? 'حفظ...' : 'حفظ الإعدادات'}</Button>
-            </div>
-          </div>
-        </Card>
-      )}
 
       {!users?.length && <Card><EmptyState /></Card>}
 

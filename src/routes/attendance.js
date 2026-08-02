@@ -2,8 +2,6 @@ const express = require('express');
 const { query } = require('../models/db');
 const { verifyToken, requirePermission } = require('../middleware/auth');
 const { logActivity } = require('../middleware/activity');
-const { distanceMeters, isInside } = require('../utils/geo');
-const { getGeo } = require('./settings');
 const router = express.Router();
 
 const ONLINE_WINDOW_MS = 90 * 1000;
@@ -57,19 +55,10 @@ router.get('/', verifyToken, requirePermission('attendance.view'), async (req, r
   }
 });
 
-router.get('/config', verifyToken, requirePermission('attendance.view'), async (req, res) => {
-  try {
-    const geo = await getGeo();
-    res.json({ geo });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.get('/me', verifyToken, requirePermission('attendance.view'), async (req, res) => {
   try {
     const { rows } = await query(
-      'SELECT id, user_id, date, check_in, check_out, status, notes, outside_since, session_start, session_end FROM attendance WHERE user_id=$1 AND date=$2',
+      'SELECT id, user_id, date, check_in, check_out, status, notes, session_start, session_end FROM attendance WHERE user_id=$1 AND date=$2',
       [req.user.id, today()]
     );
     const row = rows[0] || null;
@@ -83,18 +72,7 @@ router.get('/me', verifyToken, requirePermission('attendance.view'), async (req,
 });
 
 router.post('/check-in', verifyToken, requirePermission('attendance.manage'), async (req, res) => {
-  const { lat, lng } = req.body;
-  if (typeof lat !== 'number' || typeof lng !== 'number') {
-    return res.status(400).json({ error: 'الموقع الجغرافي مطلوب لتسجيل الحضور' });
-  }
   try {
-    const geo = await getGeo();
-    const inside = isInside({ lat, lng }, { lat: geo.lat, lng: geo.lng }, geo.radius + geo.margin);
-    if (!inside) {
-      return res.status(403).json({
-        error: 'أنت خارج نطاق غرفة الإعلام — يجب أن تكون داخل النطاق لتسجيل الحضور',
-      });
-    }
     const d = today();
     const now = new Date();
     const time = timeOnly(now);
@@ -104,17 +82,17 @@ router.post('/check-in', verifyToken, requirePermission('attendance.manage'), as
     }
     if (existing.rows.length) {
       await query(
-        'UPDATE attendance SET check_in=$1, check_out=NULL, session_start=NOW(), session_end=NULL, outside_since=NULL, check_in_lat=$2, check_in_lng=$3 WHERE id=$4',
-        [time, lat, lng, existing.rows[0].id]
+        'UPDATE attendance SET check_in=$1, check_out=NULL, session_start=NOW(), session_end=NULL, status=$2 WHERE id=$3',
+        [time, 'present', existing.rows[0].id]
       );
     } else {
       await query(
-        'INSERT INTO attendance (user_id, date, check_in, session_start, check_in_lat, check_in_lng, status) VALUES ($1,$2,$3,NOW(),$4,$5,$6)',
-        [req.user.id, d, time, lat, lng, 'present']
+        'INSERT INTO attendance (user_id, date, check_in, session_start, status) VALUES ($1,$2,$3,NOW(),$4)',
+        [req.user.id, d, time, 'present']
       );
     }
-    await query('UPDATE users SET last_seen=NOW(), last_lat=$1, last_lng=$2 WHERE id=$3', [lat, lng, req.user.id]);
-    await logActivity(req.user.id, 'سجّل حضورًا', 'attendance', `${d} · داخل النطاق`);
+    await query('UPDATE users SET last_seen=NOW() WHERE id=$1', [req.user.id]);
+    await logActivity(req.user.id, 'سجّل حضورًا', 'attendance', d);
     res.status(201).json({ ok: true, date: d, check_in: time, session_seconds: 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -122,72 +100,19 @@ router.post('/check-in', verifyToken, requirePermission('attendance.manage'), as
 });
 
 router.post('/heartbeat', verifyToken, requirePermission('attendance.manage'), async (req, res) => {
-  const { lat, lng } = req.body;
-  if (typeof lat !== 'number' || typeof lng !== 'number') {
-    return res.status(400).json({ error: 'الموقع الجغرافي مطلوب' });
-  }
   try {
-    const geo = await getGeo();
-    await query('UPDATE users SET last_seen=NOW(), last_lat=$1, last_lng=$2 WHERE id=$3', [lat, lng, req.user.id]);
-
+    await query('UPDATE users SET last_seen=NOW() WHERE id=$1', [req.user.id]);
     const { rows } = await query(
-      'SELECT id, date, check_in, check_out, outside_since, session_start, session_end FROM attendance WHERE user_id=$1 AND date=$2',
+      'SELECT id, date, check_in, check_out, session_start, session_end FROM attendance WHERE user_id=$1 AND date=$2',
       [req.user.id, today()]
     );
     const row = rows[0] || null;
     const active = row && row.check_in && !row.check_out;
-
-    const center = { lat: geo.lat, lng: geo.lng };
-    const dist = distanceMeters(lat, lng, center.lat, center.lng);
-    const inside = dist <= geo.radius + geo.margin;
-    const now = new Date();
-
-    let status = active ? 'in_room' : 'idle';
-    let autoEnded = false;
-
-    if (active) {
-      if (inside) {
-        if (row.outside_since) {
-          await query('UPDATE attendance SET outside_since=NULL WHERE id=$1', [row.id]);
-        }
-        status = 'in_room';
-      } else {
-        if (!row.outside_since) {
-          await query('UPDATE attendance SET outside_since=NOW() WHERE id=$1', [row.id]);
-          status = 'leaving';
-        } else {
-          const since = new Date(row.outside_since);
-          const elapsedMs = now - since;
-          if (elapsedMs > geo.grace_minutes * 60 * 1000) {
-            const outTime = timeOnly(now);
-            await query('UPDATE attendance SET check_out=$1, session_end=NOW(), status=$2, outside_since=NULL WHERE id=$3', [outTime, 'leave', row.id]);
-            await logActivity(req.user.id, 'إنهاء جلسة تلقائي (مغادرة النطاق)', 'attendance', today());
-            status = 'auto_ended';
-            autoEnded = true;
-          } else {
-            status = 'leaving';
-          }
-        }
-      }
-    }
-
-    const finalRow = active
-      ? (await query('SELECT id, date, check_in, check_out, outside_since, session_start, session_end FROM attendance WHERE user_id=$1 AND date=$2', [req.user.id, today()])).rows[0]
-      : row;
-
     res.json({
-      status,
-      in_room: inside,
-      distance: Math.round(dist),
-      autoEnded,
-      grace_seconds: geo.grace_minutes * 60,
-      outside_seconds: status === 'leaving' && finalRow?.outside_since
-        ? Math.max(0, Math.floor((now - new Date(finalRow.outside_since)) / 1000))
-        : 0,
-      session: finalRow
-        ? { date: finalRow.date, check_in: finalRow.check_in, check_out: finalRow.check_out, session_start: finalRow.session_start, session_end: finalRow.session_end, session_seconds: sessionSeconds(finalRow, now) }
+      status: active ? 'in_room' : 'idle',
+      session: row
+        ? { date: row.date, check_in: row.check_in, check_out: row.check_out, session_start: row.session_start, session_end: row.session_end, session_seconds: sessionSeconds(row) }
         : null,
-      geo: { name: geo.name, lat: geo.lat, lng: geo.lng, radius: geo.radius, margin: geo.margin },
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -212,11 +137,10 @@ router.post('/check-out', verifyToken, requirePermission('attendance.manage'), a
 
 router.get('/presence', verifyToken, requirePermission('attendance.view'), async (req, res) => {
   try {
-    const geo = await getGeo();
     const d = today();
     const { rows } = await query(
-      `SELECT u.id, u.name, u.username, u.role, u.active, u.last_seen, u.last_lat, u.last_lng,
-              a.check_in, a.check_out, a.outside_since, a.session_start, a.session_end
+      `SELECT u.id, u.name, u.username, u.role, u.active, u.last_seen,
+              a.check_in, a.check_out, a.session_start, a.session_end
        FROM users u
        LEFT JOIN attendance a ON a.user_id = u.id AND a.date = $1
        WHERE u.active = TRUE
@@ -224,16 +148,11 @@ router.get('/presence', verifyToken, requirePermission('attendance.view'), async
       [d]
     );
     const now = new Date();
-    const center = { lat: geo.lat, lng: geo.lng };
     const result = [];
 
     for (const u of rows) {
       const online = u.last_seen && now - new Date(u.last_seen) <= ONLINE_WINDOW_MS;
       const active = u.check_in && !u.check_out;
-      let in_room = false;
-      if (online && u.last_lat != null && u.last_lng != null) {
-        in_room = isInside({ lat: u.last_lat, lng: u.last_lng }, center, geo.radius + geo.margin);
-      }
       let currentTask = null;
       if (active) {
         const t = await query(
@@ -247,8 +166,7 @@ router.get('/presence', verifyToken, requirePermission('attendance.view'), async
         name: u.name,
         username: u.username,
         role: u.role,
-        status: active ? (in_room ? 'in_room' : 'outside') : online ? 'online' : 'offline',
-        in_room,
+        status: active ? 'in_room' : online ? 'online' : 'offline',
         online,
         active,
         check_in: u.check_in || null,

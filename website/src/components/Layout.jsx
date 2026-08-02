@@ -20,16 +20,14 @@ const NAV = [
 
 export default function Layout({ children }) {
   const { user, logout, can } = useAuth();
-  const { status, toast, leaveNotice, dismissLeaveNotice, endSession } = useSession();
+  const { status, toast } = useSession();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const items = NAV.filter((n) => n.always || can(n.key));
 
-  const dotColor =
-    status === 'in_room' ? 'bg-emerald-400 shadow-glow-green' : status === 'leaving' || status === 'online' ? 'bg-amber-400' : 'bg-gray-600';
-  const statusLabel =
-    status === 'in_room' ? 'داخل غرفة الإعلام' : status === 'leaving' ? 'خارج النطاق' : status === 'no_permission' ? 'بدون موقع' : 'خارج العمل';
+  const dotColor = status === 'in_room' ? 'bg-emerald-400 shadow-glow-green' : 'bg-gray-600';
+  const statusLabel = status === 'in_room' ? 'في جلسة عمل' : 'خارج العمل';
 
   const handleLogout = () => {
     logout();
@@ -127,29 +125,6 @@ export default function Layout({ children }) {
           Al-Khalil Media ✦ نظام إدارة الفريق الإعلامي
         </footer>
       </div>
-
-      {leaveNotice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl">
-          <div className="absolute inset-0 bg-navy-950/80 backdrop-blur-sm" onClick={dismissLeaveNotice} />
-          <div className="relative w-full max-w-md rounded-3xl glass-strong shadow-glass-lg p-7 text-center animate-[fadeIn_.2s_ease]">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-2xl mb-4">
-              ⚠
-            </div>
-            <h3 className="text-lg font-bold text-white">غادرت نطاق غرفة الإعلام</h3>
-            <p className="text-gray-400 text-sm mt-3 leading-relaxed">
-              يبدو أنك غادرت غرفة الإعلام. هل تريد إنهاء جلسة العمل؟
-              <br />
-              <span className="text-gray-600">إذا عدت إلى النطاق سيستمر العمل تلقائيًا.</span>
-            </p>
-            <div className="flex gap-3 mt-6">
-              <Button variant="danger" className="flex-1" onClick={endSession}>إنهاء جلسة العمل</Button>
-              <Button variant="secondary" className="flex-1" onClick={dismissLeaveNotice}>
-                سأعود قريبًا
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {toast && (
         <div

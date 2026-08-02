@@ -9,7 +9,7 @@ import { formatDuration } from '../utils/time';
 
 export default function Profile() {
   const { user } = useAuth();
-  const { status, sessionSeconds, geo, requestLocation } = useSession();
+  const { status, sessionSeconds, checkIn } = useSession();
   const { run, loading, error, setError } = useMutation();
   const [passwords, setPasswords] = useState({ current: '', newPassword: '' });
   const [ok, setOk] = useState('');
@@ -60,10 +60,9 @@ export default function Profile() {
                 <div className="flex items-center gap-2">
                   <span className={`w-3 h-3 rounded-full ${active ? 'bg-emerald-400 animate-[pulseSoft_2.2s_infinite]' : 'bg-gray-600'}`} />
                   <span className={`font-semibold text-sm ${active ? 'text-emerald-300' : 'text-gray-400'}`}>
-                    {active ? 'داخل غرفة الإعلام' : 'خارج العمل'}
+                    {active ? 'في جلسة عمل' : 'خارج العمل'}
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-600 mt-1.5">{geo?.name}</p>
               </div>
               {active ? (
                 <div className="text-left">
@@ -82,8 +81,8 @@ export default function Profile() {
               )}
             </div>
             {!active && !today?.check_out && (
-              <Button size="sm" variant="secondary" className="mt-3 w-full" onClick={requestLocation}>
-                تفعيل الموقع
+              <Button size="sm" variant="secondary" className="mt-3 w-full" onClick={checkIn} disabled={status === 'checking'}>
+                {status === 'checking' ? 'جارِ التسجيل...' : 'تسجيل الحضور'}
               </Button>
             )}
           </div>

@@ -16,7 +16,7 @@ const TASK_STATUS = {
 
 export default function Workspace() {
   const { user } = useAuth();
-  const { status, geo, sessionSeconds, endSession, requestLocation, permission } = useSession();
+  const { status, sessionSeconds, endSession, checkIn } = useSession();
   const { data, loading } = useData(() => api.get('/dashboard'));
   const tasks = useData(() => api.get('/tasks'));
 
@@ -48,11 +48,13 @@ export default function Workspace() {
             </h1>
             <p className="text-gray-400 mt-2 text-sm">
               {active
-                ? `مدة جلستك منذ دخولك ${geo?.name}`
-                : 'أنت خارج نطاق غرفة الإعلام — يمكنك متابعة المهام والدروس دون تسجيل جلسة.'}
+                ? 'مدة جلستك الحالية — تابع مهامك ودروسك من هنا'
+                : 'أنت خارج جلسة العمل — سجّل حضورك للبدء أو تصفح المهام والدروس بحرية.'}
             </p>
-            {!active && (permission === 'denied' || permission === 'prompt') && (
-              <Button className="mt-4" onClick={requestLocation}>تفعيل الموقع</Button>
+            {!active && (
+              <Button className="mt-4" onClick={checkIn} disabled={status === 'checking'}>
+                {status === 'checking' ? 'جارِ التسجيل...' : 'تسجيل الحضور'}
+              </Button>
             )}
           </div>
           <div className="shrink-0 flex flex-col items-center gap-4">
@@ -71,8 +73,7 @@ export default function Workspace() {
         </div>
       </Card>
 
-      {/* Quick stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Quick stats row */}      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 text-center">
           <div className="text-xs text-gray-500">مهامي قيد التنفيذ</div>
           <div className="text-3xl font-extrabold text-white mt-1">{s?.my_tasks?.in_progress ?? 0}</div>

@@ -13,7 +13,7 @@ function today() {
 
 export default function Attendance() {
   const { can } = useAuth();
-  const { status, sessionSeconds, geo, requestLocation } = useSession();
+  const { status, sessionSeconds, checkIn } = useSession();
   const [date, setDate] = useState(today());
   const { data, loading, reload } = useData(() => api.get('/attendance', { params: { date } }), [date]);
   const me = useData(() => api.get('/attendance/me'));
@@ -37,7 +37,7 @@ export default function Attendance() {
     <>
       <PageHeader
         title="الحضور والانصراف"
-        subtitle="تسجيل الحضور الجغرافي ومتابعته يوميًا"
+        subtitle="تسجيل الحضور ومتابعته يوميًا"
         actions={
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
             className="rounded-2xl bg-navy-900/70 border border-white/10 focus:border-royal-400/60 focus:ring-2 focus:ring-royal-500/20 px-4 py-2.5 text-sm text-gray-100 outline-none transition-all" />
@@ -70,11 +70,11 @@ export default function Attendance() {
           ) : (
             <div className="flex flex-wrap items-center gap-3">
               <p className="text-sm text-gray-500">
-                الحضور يُسجَّل تلقائيًا عند دخولك نطاق غرفة الإعلام
+                سجّل حضورك يدويًا لبدء جلسة عمل اليوم
               </p>
               {!active && (
-                <Button onClick={requestLocation}>
-                  {status === 'checking' ? 'جارِ تحديد الموقع...' : 'تفعيل الموقع'}
+                <Button onClick={checkIn} disabled={status === 'checking'}>
+                  {status === 'checking' ? 'جارِ التسجيل...' : 'تسجيل الحضور'}
                 </Button>
               )}
               {active && (
@@ -85,11 +85,6 @@ export default function Attendance() {
             </div>
           )}
         </div>
-        {!me.data?.today && geo && (
-          <p className="text-xs text-gray-600 mt-3">
-            النطاق: {geo.name} · نصف القطر {geo.radius} م + هامش {geo.margin} م
-          </p>
-        )}
         {error && <div className="mt-3"><Alert type="error">{error}</Alert></div>}
       </Card>
 

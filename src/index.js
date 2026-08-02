@@ -18,7 +18,6 @@ const dashboardRoutes = require('./routes/dashboard');
 const reportRoutes = require('./routes/reports');
 const archiveRoutes = require('./routes/archive');
 const assistantRoutes = require('./routes/assistant');
-const { router: settingsRoutes } = require('./routes/settings');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -30,7 +29,6 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/archive', archiveRoutes);
 app.use('/api/assistant', assistantRoutes);
-app.use('/api/settings', settingsRoutes);
 
 app.get('/api/connection-status', async (req, res) => {
   try {

@@ -15,8 +15,7 @@ const TASK_STATUS = {
 };
 
 const PRESENCE_META = {
-  in_room: { label: 'داخل غرفة الإعلام', color: 'green', dot: 'bg-emerald-400' },
-  outside: { label: 'متصل خارج الغرفة', color: 'orange', dot: 'bg-amber-400' },
+  in_room: { label: 'في جلسة عمل', color: 'green', dot: 'bg-emerald-400' },
   online: { label: 'متصل', color: 'blue', dot: 'bg-electric-400' },
   offline: { label: 'غير متصل', color: 'gray', dot: 'bg-gray-600' },
 };
@@ -25,7 +24,7 @@ export default function Dashboard() {
   const { user, can } = useAuth();
   const navigate = useNavigate();
   const session = useSession();
-  const { status, geo, sessionSeconds, session: activeSession, permission, requestLocation } = session;
+  const { status, sessionSeconds, session: activeSession, checkIn } = session;
 
   const { data, loading } = useData(() => api.get('/dashboard'));
   const tasks = useData(() => api.get('/tasks'));
@@ -79,34 +78,28 @@ export default function Dashboard() {
               <>
                 <div className="flex items-center gap-3">
                   <span className="w-4 h-4 rounded-full bg-emerald-400 animate-[pulseSoft_2.2s_infinite]" />
-                  <span className="text-emerald-300 font-semibold text-lg">داخل غرفة الإعلام</span>
+                  <span className="text-emerald-300 font-semibold text-lg">في جلسة عمل</span>
                 </div>
                 <p className="text-white text-2xl font-extrabold mt-3 tracking-tight">تم تسجيل حضورك بنجاح ✦</p>
                 <p className="text-gray-400 mt-2.5 flex items-center gap-2 text-sm">
-                  <span className="text-royal-400">◉</span> {geo?.name || 'غرفة الإعلام'}
-                  <span className="text-gray-700">·</span>
-                  <span className="text-gray-500">
-                    نصف القطر {geo?.radius} م + هامش {geo?.margin} م
-                  </span>
+                  <span className="text-royal-400">◉</span> يمكنك متابعة مهامك والدروس من صفحة وضع العمل
                 </p>
               </>
             ) : (
               <>
                 <div className="flex items-center gap-3">
-                  <span className={`w-4 h-4 rounded-full ${permission === 'denied' ? 'bg-red-400' : status === 'checking' ? 'bg-amber-400 animate-pulse' : 'bg-gray-600'}`} />
+                  <span className="w-4 h-4 rounded-full bg-gray-600" />
                   <span className="text-gray-200 font-semibold text-lg">
-                    {permission === 'denied' ? 'الوصول إلى الموقع مرفوض'
-                      : status === 'checking' ? 'جارِ تحديد موقعك...'
-                      : permission === 'unsupported' ? 'الموقع غير مدعوم في المتصفح'
-                      : 'خارج غرفة الإعلام'}
+                    {status === 'checking' ? 'جارِ تسجيل حضورك...' : 'خارج العمل'}
                   </span>
                 </div>
                 <p className="text-gray-400 mt-3 max-w-md text-sm leading-relaxed">
-                  لتسجيل الحضور يجب أن تكون داخل النطاق الجغرافي لـ <span className="text-white">{geo?.name}</span>
-                  {' '}(نصف القطر {geo?.radius} م + هامش {geo?.margin} م). سمح بالوصول إلى الموقع وادخل غرفة الإعلام.
+                  سجّل حضورك لبدء جلسة عمل ومتابعة مهامك، أو تصفح المهام والدروس بحرية دون تسجيل جلسة.
                 </p>
-                {(permission === 'denied' || permission === 'prompt') && (
-                  <Button className="mt-4" onClick={requestLocation}>تفعيل الموقع وإعادة المحاولة</Button>
+                {!active && (
+                  <Button className="mt-4" onClick={checkIn} disabled={status === 'checking'}>
+                    {status === 'checking' ? 'جارِ التسجيل...' : 'تسجيل الحضور'}
+                  </Button>
                 )}
               </>
             )}

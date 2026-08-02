@@ -1,7 +1,6 @@
 const express = require('express');
 const { query } = require('../models/db');
 const { verifyToken, requirePermission } = require('../middleware/auth');
-const { getGeo } = require('./settings');
 const router = express.Router();
 
 router.get('/', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
@@ -51,9 +50,7 @@ router.get('/', verifyToken, requirePermission('dashboard.view'), async (req, re
     tasksR.rows.forEach((r) => { stats.tasks[r.status] = r.c; stats.tasks.total += r.c; });
     myTasksR.rows.forEach((r) => { stats.my_tasks[r.status] = r.c; });
 
-    const geo = await getGeo();
-
-    res.json({ stats, recentActivity: activitiesR.rows, geo });
+    res.json({ stats, recentActivity: activitiesR.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
