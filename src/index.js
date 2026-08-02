@@ -8,6 +8,28 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+const taskRoutes = require('./routes/tasks');
+const lessonRoutes = require('./routes/lessons');
+const attendanceRoutes = require('./routes/attendance');
+const captionRoutes = require('./routes/captions');
+const dashboardRoutes = require('./routes/dashboard');
+const reportRoutes = require('./routes/reports');
+const archiveRoutes = require('./routes/archive');
+const assistantRoutes = require('./routes/assistant');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/captions', captionRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/archive', archiveRoutes);
+app.use('/api/assistant', assistantRoutes);
+
 app.get('/api/connection-status', async (req, res) => {
   try {
     const { query } = require('./models/db');

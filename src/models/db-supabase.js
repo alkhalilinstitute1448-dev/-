@@ -80,6 +80,10 @@ async function migrate() {
     {
       name: '001_pg_functions',
       sql: `
+        CREATE TABLE IF NOT EXISTS _migrations (
+          name TEXT PRIMARY KEY,
+          applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
         CREATE OR REPLACE FUNCTION pg_query(query_text text)
         RETURNS SETOF json
         LANGUAGE plpgsql
@@ -117,29 +121,135 @@ async function migrate() {
         DROP TABLE IF EXISTS stages CASCADE;
         DROP TABLE IF EXISTS batches CASCADE;
         DROP TABLE IF EXISTS users CASCADE;
+        DROP TABLE IF EXISTS tasks CASCADE;
+        DROP TABLE IF EXISTS lessons CASCADE;
+        DROP TABLE IF EXISTS captions CASCADE;
+        DROP TABLE IF EXISTS activities CASCADE;
+        DROP TABLE IF EXISTS archives CASCADE;
+      `,
+    },
+    {
+      name: '003_media_schema',
+      sql: `
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          username TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL,
+          role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin','user')),
+          permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+          active BOOLEAN NOT NULL DEFAULT TRUE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS tasks (
+          id SERIAL PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high')),
+          status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','in_progress','completed','cancelled')),
+          due_date DATE,
+          notes TEXT DEFAULT '',
+          created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS lessons (
+          id SERIAL PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          type TEXT NOT NULL DEFAULT 'recorded' CHECK (type IN ('recorded','live')),
+          presenter TEXT DEFAULT '',
+          date DATE,
+          duration TEXT DEFAULT '',
+          materials TEXT DEFAULT '',
+          notes TEXT DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','done','cancelled')),
+          created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS attendance (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          date DATE NOT NULL,
+          check_in TIME,
+          check_out TIME,
+          status TEXT NOT NULL DEFAULT 'present' CHECK (status IN ('present','absent','late','leave')),
+          notes TEXT DEFAULT '',
+          UNIQUE (user_id, date)
+        );
+        CREATE TABLE IF NOT EXISTS captions (
+          id SERIAL PRIMARY KEY,
+          platform TEXT NOT NULL DEFAULT 'facebook',
+          name TEXT NOT NULL,
+          text TEXT NOT NULL,
+          tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+          created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS activities (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          action TEXT NOT NULL,
+          entity TEXT,
+          details TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS archives (
+          id SERIAL PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          type TEXT NOT NULL DEFAULT 'other' CHECK (type IN ('post','video','design','article','other')),
+          url TEXT DEFAULT '',
+          date DATE,
+          created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `,
+    },
+    {
+      name: '004_seed_admin',
+      sql: `
+        INSERT INTO users (name, username, password_hash, role, permissions)
+        SELECT 'مدير النظام', 'admin', '$2a$10$LR4aMRJ7NbcNovruiVFW9.pBFyc60jgL9vhZGPh46oaubpzh4r7Aa', 'admin', '[]'::jsonb
+        WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
       `,
     },
   ];
 
+  const isNetworkErr = (err) =>
+    err?.message?.includes('fetch failed') ||
+    err?.code === 'ECONNRESET' ||
+    err?.name === 'AbortError' ||
+    err?.message?.includes('timed out');
+
+  let applied = [];
+  try {
+    const res = await query('SELECT name FROM _migrations');
+    applied = res.rows.map((r) => r.name);
+  } catch (err) {
+    if (isNetworkErr(err)) {
+      console.log('Supabase unreachable — skipping migrations.');
+      try {
+        await query('SELECT 1 AS ok');
+      } catch (_) {}
+      return;
+    }
+  }
+
   for (const step of steps) {
+    if (applied.includes(step.name)) continue;
     try {
       await query(step.sql);
+      await query('INSERT INTO _migrations (name) VALUES ($1)', [step.name]);
       console.log(`Migration ${step.name} applied`);
     } catch (err) {
-      const isNetworkErr =
-        err?.message?.includes('fetch failed') ||
-        err?.code === 'ECONNRESET' ||
-        err?.name === 'AbortError' ||
-        err?.message?.includes('timed out');
-      if (step.name === '001_pg_functions') {
-        console.log('pg_query/pg_exec functions already exist, skipping...');
-      } else {
-        console.error(`Migration ${step.name} failed:`, err.message);
-      }
-      if (isNetworkErr) {
+      if (isNetworkErr(err)) {
         console.log('Supabase unreachable — skipping remaining migrations.');
         break;
       }
+      console.error(`Migration ${step.name} failed:`, err.message);
     }
   }
 

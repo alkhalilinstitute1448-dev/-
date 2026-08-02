@@ -1,70 +1,54 @@
-import { useState, useEffect } from 'react';
-import api from './api';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Layout from './components/Layout';
+import { Loader } from './components/ui';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import Attendance from './pages/Attendance';
+import Tasks from './pages/Tasks';
+import Lessons from './pages/Lessons';
+import Captions from './pages/Captions';
+import Reports from './pages/Reports';
+import Archive from './pages/Archive';
+import Users from './pages/Users';
+import Assistant from './pages/Assistant';
 
-function StatusRow({ label, status }) {
+function Protected({ children, perm }) {
+  const { user, can, loading } = useAuth();
+  if (loading) return <Loader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (perm && !can(perm)) return <Navigate to="/" replace />;
+  return <Layout>{children}</Layout>;
+}
+
+function RoutesView() {
+  const { user } = useAuth();
   return (
-    <div className="flex items-center justify-between py-4 px-6 bg-[#1c1c1c] rounded-xl border border-gold-500/10">
-      <span className="text-white font-medium text-lg">{label}</span>
-      <span className={`flex items-center gap-2 text-lg font-bold ${status ? 'text-emerald-400' : 'text-red-400'}`}>
-        {status ? '✅' : '❌'}
-        {status ? 'Connected' : 'Disconnected'}
-      </span>
-    </div>
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/" element={<Protected perm="dashboard.view"><Dashboard /></Protected>} />
+      <Route path="/profile" element={<Protected><Profile /></Protected>} />
+      <Route path="/attendance" element={<Protected perm="attendance.view"><Attendance /></Protected>} />
+      <Route path="/tasks" element={<Protected perm="tasks.view"><Tasks /></Protected>} />
+      <Route path="/lessons" element={<Protected perm="lessons.view"><Lessons /></Protected>} />
+      <Route path="/captions" element={<Protected perm="captions.view"><Captions /></Protected>} />
+      <Route path="/reports" element={<Protected perm="reports.view"><Reports /></Protected>} />
+      <Route path="/archive" element={<Protected perm="archive.view"><Archive /></Protected>} />
+      <Route path="/users" element={<Protected perm="users.view"><Users /></Protected>} />
+      <Route path="/assistant" element={<Protected perm="assistant.view"><Assistant /></Protected>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
 export default function App() {
-  const [backend, setBackend] = useState(null);
-  const [database, setDatabase] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api.get('/connection-status')
-      .then(res => {
-        setBackend(res.data.backend);
-        setDatabase(res.data.database);
-      })
-      .catch(() => {
-        setBackend(false);
-        setDatabase(false);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#0a0a0a' }}>
-      <div className="max-w-md w-full space-y-6">
-        <div className="text-center mb-2">
-          <h1 className="text-3xl font-bold text-gold-500 mb-1">AL-KHALIL MEDIA ✦</h1>
-          <p className="text-gray-500 text-sm">Al-Khalil Media — System Status</p>
-        </div>
-
-        <div className="space-y-3">
-          <StatusRow label="Frontend" status={!loading} />
-          <StatusRow label="Backend" status={backend} />
-          <StatusRow label="Database" status={database} />
-        </div>
-
-        {loading && (
-          <div className="text-center text-gray-500 text-sm">Checking connection...</div>
-        )}
-
-        {backend && database && !loading && (
-          <div className="text-center pt-2">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-sm">
-              ✅ All systems operational
-            </span>
-          </div>
-        )}
-
-        {!loading && (!backend || !database) && (
-          <div className="text-center pt-2">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm">
-              ❌ Some systems are down
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <RoutesView />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
