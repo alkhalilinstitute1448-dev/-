@@ -35,8 +35,8 @@ export default function App() {
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#0a0a0a' }}>
       <div className="max-w-md w-full space-y-6">
         <div className="text-center mb-2">
-          <h1 className="text-3xl font-bold text-gold-500 mb-1">أكاديمية الخليل</h1>
-          <p className="text-gray-500 text-sm">Al-Khalil Academy — System Status</p>
+          <h1 className="text-3xl font-bold text-gold-500 mb-1">AL-KHALIL MEDIA ✦</h1>
+          <p className="text-gray-500 text-sm">Al-Khalil Media — System Status</p>
         </div>
 
         <div className="space-y-3">
