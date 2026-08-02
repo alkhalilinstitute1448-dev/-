@@ -14,6 +14,13 @@ function getClient() {
   if (!key) throw new Error('SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY must be set in .env');
   supabase = createClient(SUPABASE_URL, key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (url, opts) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
+      },
+    },
   });
   return supabase;
 }
@@ -119,17 +126,30 @@ async function migrate() {
       await query(step.sql);
       console.log(`Migration ${step.name} applied`);
     } catch (err) {
+      const isNetworkErr =
+        err?.message?.includes('fetch failed') ||
+        err?.code === 'ECONNRESET' ||
+        err?.name === 'AbortError' ||
+        err?.message?.includes('timed out');
       if (step.name === '001_pg_functions') {
         console.log('pg_query/pg_exec functions already exist, skipping...');
       } else {
         console.error(`Migration ${step.name} failed:`, err.message);
       }
+      if (isNetworkErr) {
+        console.log('Supabase unreachable — skipping remaining migrations.');
+        break;
+      }
     }
   }
 
-  const healthy = await query('SELECT 1 AS ok');
-  if (healthy.rows[0]?.ok === 1) {
-    console.log('Database connection verified.');
+  try {
+    const healthy = await query('SELECT 1 AS ok');
+    if (healthy.rows[0]?.ok === 1) {
+      console.log('Database connection verified.');
+    }
+  } catch (err) {
+    console.log('Database health check failed:', err.message);
   }
 
   console.log('Supabase setup completed.');

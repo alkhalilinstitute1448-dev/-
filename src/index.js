@@ -11,7 +11,8 @@ app.use(express.json());
 app.get('/api/connection-status', async (req, res) => {
   try {
     const { query } = require('./models/db');
-    await query('SELECT 1');
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+    await Promise.race([query('SELECT 1'), timeout]);
     res.json({ backend: true, database: true });
   } catch {
     res.json({ backend: true, database: false });
@@ -26,8 +27,13 @@ app.get('*', (req, res) => {
 });
 
 async function start() {
-  const { migrate } = require('./models/db');
-  await migrate();
+  try {
+    const { migrate } = require('./models/db');
+    const migrateTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('migrate timeout')), 25000));
+    await Promise.race([migrate(), migrateTimeout]);
+  } catch (err) {
+    console.error('Database migration failed (continuing anyway):', err.message);
+  }
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
