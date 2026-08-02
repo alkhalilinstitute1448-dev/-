@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('akm_token', data.token);
     localStorage.setItem('akm_user', JSON.stringify(data.user));
     setUser(data.user);
+    setLoading(false);
     return data.user;
   }, []);
 
@@ -25,6 +26,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('akm_token');
     localStorage.removeItem('akm_user');
     setUser(null);
+    setLoading(false);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -34,6 +36,8 @@ export function AuthProvider({ children }) {
       localStorage.setItem('akm_user', JSON.stringify(data.user));
     } catch {
       logout();
+    } finally {
+      setLoading(false);
     }
   }, [logout]);
 
