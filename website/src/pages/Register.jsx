@@ -26,11 +26,35 @@ export default function Register() {
 
   useEffect(() => {
     let active = true;
-    api
-      .post('/registrations/validate-link', { token })
-      .then(() => { if (active) setLinkState('valid'); })
-      .catch(() => { if (active) setLinkState('invalid'); });
-    return () => { active = false; };
+    let attempts = 0;
+    let timer = null;
+
+    api.get('/connection-status', { timeout: 20000 }).catch(() => {});
+
+    const validate = async () => {
+      try {
+        const res = await api.post('/registrations/validate-link', { token }, { timeout: 25000 });
+        if (!active) return;
+        setLinkState(res.data.ok ? 'valid' : 'invalid');
+      } catch (err) {
+        if (!active) return;
+        const status = err?.response?.status;
+        const transient = !status || status >= 500;
+        if (transient && attempts < 40) {
+          attempts++;
+          setLinkState('retry');
+          timer = setTimeout(validate, 5000);
+        } else {
+          setLinkState('invalid');
+        }
+      }
+    };
+
+    validate();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
   }, [token]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -73,10 +97,15 @@ export default function Register() {
     />
   );
 
-  if (linkState === 'loading') {
+  if (linkState === 'loading' || linkState === 'retry') {
     return (
       <Shell>
-        <Loader text="جارٍ التحقق من الرابط..." />
+        <Loader
+          text={linkState === 'retry' ? 'الخادم يبدأ التشغيل الآن... يرجى الانتظار قليلاً' : 'جارٍ التحقق من الرابط...'}
+        />
+        {linkState === 'retry' && (
+          <p className="text-center text-xs text-gray-600 mt-4">إذا توقّف الخادم عن العمل بعد فترة خمول، أول اتصال قد يستغرق ٢٠-٣٠ ثانية</p>
+        )}
       </Shell>
     );
   }
