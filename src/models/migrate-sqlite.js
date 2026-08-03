@@ -180,6 +180,45 @@ async function migrate() {
         }
       },
     },
+    {
+      name: '005_registration_tables',
+      fn: async () => {
+        try {
+          await q(`ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`);
+        } catch (err) {
+          console.log('must_change_password column:', err.message);
+        }
+        await q(`
+          CREATE TABLE IF NOT EXISTS registration_links (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token TEXT NOT NULL UNIQUE,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          )
+        `);
+        await q(`
+          CREATE TABLE IF NOT EXISTS registration_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            link_token TEXT NOT NULL,
+            first_name TEXT NOT NULL,
+            nickname TEXT NOT NULL,
+            father_name TEXT NOT NULL,
+            mother_name TEXT NOT NULL,
+            father_status TEXT NOT NULL,
+            father_job TEXT NOT NULL,
+            mother_status TEXT NOT NULL,
+            mother_job TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            photo TEXT,
+            status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+            username TEXT,
+            approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          )
+        `);
+      },
+    },
   ];
 
   for (const m of migrations) {

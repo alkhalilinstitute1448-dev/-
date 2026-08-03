@@ -16,11 +16,15 @@ import Reports from './pages/Reports';
 import Archive from './pages/Archive';
 import Users from './pages/Users';
 import Assistant from './pages/Assistant';
+import Register from './pages/Register';
+import RegistrationRequests from './pages/RegistrationRequests';
+import ForcePasswordChange from './pages/ForcePasswordChange';
 
 function Protected({ children, perm }) {
   const { user, can, loading } = useAuth();
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.must_change_password) return <Navigate to="/change-password" replace />;
   if (perm && !can(perm)) return <Navigate to="/" replace />;
   return <Layout>{children}</Layout>;
 }
@@ -30,6 +34,8 @@ function RoutesView() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/register/:token" element={<Register />} />
+      <Route path="/change-password" element={<ForcePasswordChange />} />
       <Route path="/" element={<Protected perm="dashboard.view"><Dashboard /></Protected>} />
       <Route path="/work" element={<Protected><Workspace /></Protected>} />
       <Route path="/profile" element={<Protected><Profile /></Protected>} />
@@ -40,6 +46,7 @@ function RoutesView() {
       <Route path="/reports" element={<Protected perm="reports.view"><Reports /></Protected>} />
       <Route path="/archive" element={<Protected perm="archive.view"><Archive /></Protected>} />
       <Route path="/users" element={<Protected perm="users.view"><Users /></Protected>} />
+      <Route path="/registrations" element={<Protected perm="registrations.view"><RegistrationRequests /></Protected>} />
       <Route path="/assistant" element={<Protected perm="assistant.view"><Assistant /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

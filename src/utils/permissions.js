@@ -13,12 +13,22 @@ const PERMISSIONS = {
   'reports.view': 'التقارير',
   'archive.view': 'الأرشيف',
   'assistant.view': 'المساعد الذكي',
+  'registrations.view': 'عرض طلبات التسجيل',
+  'registrations.manage': 'إدارة طلبات التسجيل',
 };
 
 function hasPermission(user, perm) {
   if (!user) return false;
   if (user.role === 'admin') return true;
-  return Array.isArray(user.permissions) && user.permissions.includes(perm);
+  let perms = user.permissions;
+  if (typeof perms === 'string') {
+    try {
+      perms = JSON.parse(perms);
+    } catch {
+      perms = [];
+    }
+  }
+  return Array.isArray(perms) && perms.includes(perm);
 }
 
 module.exports = { PERMISSIONS, hasPermission };

@@ -66,7 +66,7 @@ router.put('/password', verifyToken, async (req, res) => {
     const ok = await bcrypt.compare(current, rows[0].password_hash);
     if (!ok) return res.status(400).json({ error: 'كلمة المرور الحالية غير صحيحة' });
     const hash = await bcrypt.hash(newPassword, 10);
-    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.user.id]);
+    await query('UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2', [hash, req.user.id]);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

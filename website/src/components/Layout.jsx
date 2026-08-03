@@ -9,6 +9,7 @@ const NAV = [
   { to: '/', key: 'dashboard.view', icon: '◈', label: 'لوحة التحكم', end: true },
   { to: '/work', key: '', icon: '⚙', label: 'وضع العمل', always: true },
   { to: '/users', key: 'users.view', icon: '✧', label: 'أعضاء الفريق' },
+  { to: '/registrations', key: 'registrations.view', icon: '✉', label: 'طلبات التسجيل' },
   { to: '/attendance', key: 'attendance.view', icon: '◷', label: 'الحضور والانصراف' },
   { to: '/tasks', key: 'tasks.view', icon: '✓', label: 'المهام' },
   { to: '/lessons', key: 'lessons.view', icon: '▤', label: 'الدروس' },

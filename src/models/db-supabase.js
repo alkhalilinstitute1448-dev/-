@@ -246,6 +246,45 @@ async function migrate() {
         ALTER TABLE attendance ADD COLUMN IF NOT EXISTS session_end TIMESTAMPTZ;
       `,
     },
+    {
+      name: '008_must_change_password',
+      sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;`,
+    },
+    {
+      name: '009_registration_links',
+      sql: `
+        CREATE TABLE IF NOT EXISTS registration_links (
+          id SERIAL PRIMARY KEY,
+          token TEXT NOT NULL UNIQUE,
+          active BOOLEAN NOT NULL DEFAULT TRUE,
+          created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `,
+    },
+    {
+      name: '010_registration_requests',
+      sql: `
+        CREATE TABLE IF NOT EXISTS registration_requests (
+          id SERIAL PRIMARY KEY,
+          link_token TEXT NOT NULL,
+          first_name TEXT NOT NULL,
+          nickname TEXT NOT NULL,
+          father_name TEXT NOT NULL,
+          mother_name TEXT NOT NULL,
+          father_status TEXT NOT NULL,
+          father_job TEXT NOT NULL,
+          mother_status TEXT NOT NULL,
+          mother_job TEXT NOT NULL,
+          phone TEXT NOT NULL,
+          photo TEXT,
+          status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+          username TEXT,
+          approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `,
+    },
   ];
 
   const isNetworkErr = (err) =>

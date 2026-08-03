@@ -16,13 +16,16 @@ async function verifyToken(req, res, next) {
   try {
     const decoded = jwt.verify(header.split(' ')[1], JWT_SECRET);
     const { rows } = await query(
-      'SELECT id, name, username, role, permissions, active, created_at FROM users WHERE id = $1',
+      'SELECT id, name, username, role, permissions, active, must_change_password, created_at FROM users WHERE id = $1',
       [decoded.id]
     );
     if (!rows.length || rows[0].active === false) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     req.user = rows[0];
+    if (rows[0].must_change_password && !req.originalUrl.includes('/api/auth/')) {
+      return res.status(403).json({ error: 'يجب تغيير كلمة المرور قبل استخدام النظام', code: 'PASSWORD_CHANGE_REQUIRED' });
+    }
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {

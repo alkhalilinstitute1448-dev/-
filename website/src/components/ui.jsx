@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 export function Card({ className = '', hover, children, ...props }) {
   return (
@@ -37,11 +37,14 @@ export function Button({ variant = 'primary', size = 'md', className = '', child
   );
 }
 
-export function Input({ label, hint, className = '', ...props }) {
+export function Input({ label, hint, className = '', id, ...props }) {
+  const autoId = useId();
+  const inputId = id || autoId;
   return (
     <div className="space-y-1.5">
-      {label && <label className="block text-sm text-gray-300/90">{label}</label>}
+      {label && <label htmlFor={inputId} className="block text-sm text-gray-300/90">{label}</label>}
       <input
+        id={inputId}
         className={`w-full rounded-2xl bg-navy-900/70 border border-white/10 focus:border-royal-400/60 focus:ring-2 focus:ring-royal-500/20 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-600 outline-none transition-all ${className}`}
         {...props}
       />
@@ -50,11 +53,14 @@ export function Input({ label, hint, className = '', ...props }) {
   );
 }
 
-export function Select({ label, className = '', children, ...props }) {
+export function Select({ label, className = '', id, children, ...props }) {
+  const autoId = useId();
+  const selectId = id || autoId;
   return (
     <div className="space-y-1.5">
-      {label && <label className="block text-sm text-gray-300/90">{label}</label>}
+      {label && <label htmlFor={selectId} className="block text-sm text-gray-300/90">{label}</label>}
       <select
+        id={selectId}
         className={`w-full rounded-2xl bg-navy-900/70 border border-white/10 focus:border-royal-400/60 focus:ring-2 focus:ring-royal-500/20 px-4 py-2.5 text-sm text-gray-100 outline-none transition-all ${className}`}
         {...props}
       >
@@ -64,11 +70,14 @@ export function Select({ label, className = '', children, ...props }) {
   );
 }
 
-export function Textarea({ label, className = '', ...props }) {
+export function Textarea({ label, className = '', id, ...props }) {
+  const autoId = useId();
+  const textareaId = id || autoId;
   return (
     <div className="space-y-1.5">
-      {label && <label className="block text-sm text-gray-300/90">{label}</label>}
+      {label && <label htmlFor={textareaId} className="block text-sm text-gray-300/90">{label}</label>}
       <textarea
+        id={textareaId}
         className={`w-full rounded-2xl bg-navy-900/70 border border-white/10 focus:border-royal-400/60 focus:ring-2 focus:ring-royal-500/20 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-600 outline-none transition-all resize-y ${className}`}
         {...props}
       />

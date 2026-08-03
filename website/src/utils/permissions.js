@@ -13,6 +13,8 @@ export const PERMISSIONS = [
   { key: 'reports.view', label: 'التقارير' },
   { key: 'archive.view', label: 'الأرشيف' },
   { key: 'assistant.view', label: 'المساعد الذكي' },
+  { key: 'registrations.view', label: 'عرض طلبات التسجيل' },
+  { key: 'registrations.manage', label: 'إدارة طلبات التسجيل' },
 ];
 
 export function permissionLabel(key) {

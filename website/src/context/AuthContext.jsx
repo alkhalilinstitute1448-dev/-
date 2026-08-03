@@ -7,10 +7,22 @@ const RETRYABLE = (err) => !err?.response || [408, 502, 503, 504].includes(err?.
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+function normalizeUser(u) {
+  if (!u) return u;
+  if (typeof u.permissions === 'string') {
+    try {
+      u.permissions = JSON.parse(u.permissions);
+    } catch {
+      u.permissions = [];
+    }
+  }
+  return u;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('akm_user') || 'null');
+      return normalizeUser(JSON.parse(localStorage.getItem('akm_user') || 'null'));
     } catch {
       return null;
     }
@@ -25,9 +37,10 @@ export function AuthProvider({ children }) {
         const { data } = await api.post('/auth/login', payload);
         localStorage.setItem('akm_token', data.token);
         localStorage.setItem('akm_user', JSON.stringify(data.user));
-        setUser(data.user);
+        const normalized = normalizeUser(data.user);
+        setUser(normalized);
         setLoading(false);
-        return data.user;
+        return normalized;
       } catch (err) {
         lastErr = err;
         if (!RETRYABLE(err) || i === 2) throw err;
@@ -48,8 +61,9 @@ export function AuthProvider({ children }) {
     for (let i = 0; i < 2; i++) {
       try {
         const { data } = await api.get('/auth/me');
-        setUser(data.user);
-        localStorage.setItem('akm_user', JSON.stringify(data.user));
+        const normalized = normalizeUser(data.user);
+        setUser(normalized);
+        localStorage.setItem('akm_user', JSON.stringify(normalized));
         setLoading(false);
         return;
       } catch (err) {
