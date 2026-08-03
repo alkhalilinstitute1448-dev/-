@@ -27,7 +27,14 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
-  const [loading, setLoading] = useState(Boolean(localStorage.getItem('akm_token')));
+  const [loading, setLoading] = useState(() => {
+    if (!localStorage.getItem('akm_token')) return false;
+    try {
+      return !JSON.parse(localStorage.getItem('akm_user') || 'null');
+    } catch {
+      return true;
+    }
+  });
 
   const login = useCallback(async (username, password) => {
     const payload = { username, password };
@@ -58,7 +65,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const refresh = useCallback(async () => {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 4; i++) {
       try {
         const { data } = await api.get('/auth/me');
         const normalized = normalizeUser(data.user);
@@ -67,12 +74,15 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       } catch (err) {
-        if (i === 1 || !RETRYABLE(err)) {
+        if (err?.response?.status === 401) {
           logout();
+          return;
+        }
+        if (i === 3) {
           setLoading(false);
           return;
         }
-        await sleep(3000);
+        await sleep(4000);
       }
     }
   }, [logout]);
