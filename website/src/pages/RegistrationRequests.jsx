@@ -149,12 +149,12 @@ export default function RegistrationRequests() {
       <Card className="p-6 mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="font-bold text-white">روابط التسجيل</h3>
-          <span className="text-xs text-gray-500">الرابط النشط الوحيد يقبل الطلبات</span>
+          <span className="text-xs text-gray-500">كل رابط يبقى صالحًا حتى إلغائه يدويًا</span>
         </div>
 
         {activeLink && (
           <div className="glass rounded-2xl p-4 mb-4 border border-emerald-500/20">
-            <p className="text-[11px] text-emerald-300 mb-2">● الرابط النشط</p>
+            <p className="text-[11px] text-emerald-300 mb-2">● أحدث رابط نشط</p>
             <div className="flex items-center gap-2 flex-wrap">
               <code className="flex-1 min-w-0 text-sm text-gray-200 bg-navy-900/70 border border-white/10 rounded-xl px-3 py-2.5 truncate" dir="ltr">
                 {registerUrl(activeLink.token)}

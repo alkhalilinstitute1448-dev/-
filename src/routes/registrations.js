@@ -175,7 +175,6 @@ router.post('/:id/reject', verifyToken, requirePermission('registrations.manage'
 router.post('/links', verifyToken, requirePermission('registrations.manage'), async (req, res) => {
   try {
     const token = crypto.randomBytes(24).toString('base64url');
-    await query('UPDATE registration_links SET active = FALSE WHERE active = TRUE');
     await query('INSERT INTO registration_links (token, created_by) VALUES ($1,$2)', [token, req.user.id]);
     await logActivity(req.user.id, 'أنشأ رابط تسجيل', 'registrations', token.slice(0, 8));
     res.status(201).json({ token });
