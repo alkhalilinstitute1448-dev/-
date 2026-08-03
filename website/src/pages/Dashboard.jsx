@@ -24,7 +24,7 @@ export default function Dashboard() {
   const { user, can } = useAuth();
   const navigate = useNavigate();
   const session = useSession();
-  const { status, sessionSeconds, session: activeSession, checkIn } = session;
+  const { status, sessionSeconds, session: activeSession, checkIn, endSession } = session;
 
   const { data, loading } = useData(() => api.get('/dashboard'));
   const tasks = useData(() => api.get('/tasks'));
