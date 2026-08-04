@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SessionProvider } from './context/SessionContext';
 import Layout from './components/Layout';
+import BackendStatus from './components/BackendStatus';
+import useKeepAlive from './hooks/useKeepAlive';
 import { Loader } from './components/ui';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -56,9 +58,15 @@ function RoutesView() {
   );
 }
 
+function KeepAlive() {
+  useKeepAlive();
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
+      <KeepAlive />
       <SessionProvider>
         <BrowserRouter>
           <RoutesView />

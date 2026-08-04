@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSession } from '../context/SessionContext';
 import { Button, Avatar } from './ui';
 import Logo from './Logo';
+import BackendStatus from './BackendStatus';
 
 const NAV = [
   { to: '/', key: 'dashboard.view', icon: '◈', label: 'لوحة التحكم', end: true },
@@ -37,6 +38,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen" dir="rtl">
+      <BackendStatus />
       <aside
         className={`fixed inset-y-0 right-0 z-40 w-64 bg-navy-900/85 backdrop-blur-2xl border-r border-white/[0.07] transform transition-transform duration-300 flex flex-col ${
           open ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
