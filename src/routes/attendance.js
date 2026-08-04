@@ -139,7 +139,7 @@ router.get('/presence', verifyToken, requirePermission('attendance.view'), async
   try {
     const d = today();
     const { rows } = await query(
-      `SELECT u.id, u.name, u.username, u.role, u.active, u.last_seen,
+      `SELECT u.id, u.name, u.username, u.role, u.active, u.last_seen, u.photo,
               a.check_in, a.check_out, a.session_start, a.session_end
        FROM users u
        LEFT JOIN attendance a ON a.user_id = u.id AND a.date = $1
@@ -166,6 +166,7 @@ router.get('/presence', verifyToken, requirePermission('attendance.view'), async
         name: u.name,
         username: u.username,
         role: u.role,
+        photo: u.photo || null,
         status: active ? 'in_room' : online ? 'online' : 'offline',
         online,
         active,

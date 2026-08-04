@@ -20,6 +20,11 @@ api.interceptors.response.use(
         window.location.href = '/change-password';
       }
     }
+    if (err.response?.status === 403 && err.response?.data?.code === 'PROFILE_INCOMPLETE') {
+      if (window.location.pathname !== '/complete-profile') {
+        window.location.href = '/complete-profile';
+      }
+    }
     if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('akm_token');
       localStorage.removeItem('akm_user');

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSession } from '../context/SessionContext';
-import { Button } from './ui';
+import { Button, Avatar } from './ui';
 import Logo from './Logo';
 
 const NAV = [
@@ -72,12 +72,7 @@ export default function Layout({ children }) {
         <div className="p-4 border-t border-white/[0.07]">
           <div className="bg-navy-850/70 backdrop-blur-md rounded-2xl p-3.5 border border-white/[0.06]">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                  {user?.name?.charAt(0) || 'م'}
-                </div>
-                <span className={`absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full border-2 border-navy-900 ${dotColor}`} />
-              </div>
+              <Avatar user={user} size="md" statusDot dotClass={dotColor} />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
                 <p className="text-[11px] text-royal-300">{user?.role === 'admin' ? 'مدير' : 'عضو'}</p>
@@ -118,7 +113,7 @@ export default function Layout({ children }) {
               {statusLabel}
             </span>
           </div>
-          <Logo size="sm" showText={false} />
+          <Avatar user={user} size="sm" statusDot dotClass={status === 'in_room' ? 'bg-emerald-400' : 'bg-gray-600'} />
         </header>
 
         <main className="flex-1 px-4 sm:px-8 py-7 max-w-6xl w-full mx-auto page-enter">{children}</main>

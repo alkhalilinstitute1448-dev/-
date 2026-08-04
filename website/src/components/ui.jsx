@@ -150,6 +150,37 @@ export function PageHeader({ title, subtitle, actions }) {
   );
 }
 
+const AVATAR_SIZES = {
+  xs: { box: 'w-8 h-8 text-xs rounded-xl', dot: 'w-2.5 h-2.5' },
+  sm: { box: 'w-9 h-9 text-sm rounded-xl', dot: 'w-3 h-3' },
+  md: { box: 'w-11 h-11 text-lg rounded-2xl', dot: 'w-3.5 h-3.5' },
+  lg: { box: 'w-12 h-12 text-xl rounded-2xl', dot: 'w-4 h-4' },
+  xl: { box: 'w-16 h-16 text-2xl rounded-2xl', dot: 'w-4 h-4' },
+  '2xl': { box: 'w-20 h-20 text-3xl rounded-2xl', dot: 'w-4.5 h-4.5' },
+};
+
+export function Avatar({ user, size = 'md', className = '', statusDot, dotClass = 'bg-gray-600' }) {
+  const s = AVATAR_SIZES[size] || AVATAR_SIZES.md;
+  const photo = user?.photo;
+  const letter = (user?.name || user?.username || 'م').charAt(0);
+  return (
+    <span className={`relative inline-block shrink-0 ${className}`}>
+      <span
+        className={`${s.box} overflow-hidden flex items-center justify-center bg-gradient-to-br from-royal-500 to-indigo-600 text-white font-bold select-none`}
+      >
+        {photo ? (
+          <img src={photo} alt={user?.name || ''} className="w-full h-full object-cover" draggable={false} />
+        ) : (
+          letter
+        )}
+      </span>
+      {statusDot && (
+        <span className={`absolute -bottom-0.5 -left-0.5 rounded-full border-2 border-navy-900 ${s.dot} ${dotClass}`} />
+      )}
+    </span>
+  );
+}
+
 export function Alert({ type = 'error', children }) {
   const styles = {
     error: 'bg-red-500/10 border-red-500/30 text-red-200',

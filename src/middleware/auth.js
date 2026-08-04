@@ -16,7 +16,11 @@ async function verifyToken(req, res, next) {
   try {
     const decoded = jwt.verify(header.split(' ')[1], JWT_SECRET);
     const { rows } = await query(
-      'SELECT id, name, username, role, permissions, active, must_change_password, created_at FROM users WHERE id = $1',
+      `SELECT id, name, username, role, permissions, active, must_change_password, created_at,
+              photo, dob, gender, joined_at, admin_notes,
+              first_name, nickname, father_name, father_status, father_job,
+              mother_name, mother_status, mother_job, phone
+       FROM users WHERE id = $1`,
       [decoded.id]
     );
     if (!rows.length || rows[0].active === false) {
@@ -25,6 +29,13 @@ async function verifyToken(req, res, next) {
     req.user = rows[0];
     if (rows[0].must_change_password && !req.originalUrl.includes('/api/auth/')) {
       return res.status(403).json({ error: 'يجب تغيير كلمة المرور قبل استخدام النظام', code: 'PASSWORD_CHANGE_REQUIRED' });
+    }
+    if (
+      rows[0].role !== 'admin' &&
+      (!rows[0].dob || !rows[0].gender) &&
+      !req.originalUrl.includes('/api/auth/')
+    ) {
+      return res.status(403).json({ error: 'يجب إكمال البيانات الشخصية قبل استخدام النظام', code: 'PROFILE_INCOMPLETE' });
     }
     next();
   } catch (err) {

@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { query } = require('../models/db');
 const { generateToken, verifyToken } = require('../middleware/auth');
 const { logActivity } = require('../middleware/activity');
+const { pickProfile, validateProfile } = require('../utils/profile');
 const router = express.Router();
 
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
@@ -19,6 +20,13 @@ function pruneAttempts() {
 }
 
 setInterval(pruneAttempts, LOGIN_WINDOW_MS).unref();
+
+function publicUser(user) {
+  const copy = { ...user };
+  delete copy.password_hash;
+  if (copy.role !== 'admin') delete copy.admin_notes;
+  return copy;
+}
 
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -43,16 +51,47 @@ router.post('/login', async (req, res) => {
     }
     attempts.delete(key);
     const token = generateToken(user);
-    delete user.password_hash;
     await logActivity(user.id, 'تسجيل دخول', 'auth', user.name);
-    res.json({ token, user });
+    res.json({ token, user: publicUser(user) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 router.get('/me', verifyToken, (req, res) => {
-  res.json({ user: req.user });
+  res.json({ user: publicUser(req.user) });
+});
+
+router.put('/profile', verifyToken, async (req, res) => {
+  const profile = pickProfile(req.body);
+  if (Object.keys(profile).length === 0) {
+    return res.status(400).json({ error: 'لا توجد بيانات لتحديثها' });
+  }
+  const errMsg = validateProfile(req.body);
+  if (errMsg) return res.status(400).json({ error: errMsg });
+  try {
+    const sets = [];
+    const values = [];
+    const add = (col, val) => {
+      sets.push(`${col} = $${sets.length + 1}`);
+      values.push(val);
+    };
+    if (profile.first_name !== undefined || profile.nickname !== undefined) {
+      const first = profile.first_name !== undefined ? String(profile.first_name).trim() : (req.user.first_name || '');
+      const nick = profile.nickname !== undefined ? String(profile.nickname).trim() : (req.user.nickname || '');
+      add('name', `${first} ${nick}`.trim());
+    }
+    for (const [k, v] of Object.entries(profile)) {
+      add(k, v === '' && ['dob', 'photo', 'gender'].includes(k) ? null : v);
+    }
+    await query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${sets.length + 1}`, [...values, req.user.id]);
+    const { rows } = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const user = rows[0];
+    await logActivity(req.user.id, 'حدّث بياناته الشخصية', 'profile', user.name);
+    res.json({ user: publicUser(user) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/password', verifyToken, async (req, res) => {

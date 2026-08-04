@@ -285,6 +285,39 @@ async function migrate() {
         );
       `,
     },
+    {
+      name: '011_user_profile_fields',
+      sql: `
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS photo TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS father_name TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS father_status TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS father_job TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS mother_name TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS mother_status TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS mother_job TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS dob DATE;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS joined_at TIMESTAMPTZ;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_notes TEXT;
+        UPDATE users u
+          SET photo = r.photo,
+              first_name = r.first_name,
+              nickname = r.nickname,
+              father_name = r.father_name,
+              father_status = r.father_status,
+              father_job = r.father_job,
+              mother_name = r.mother_name,
+              mother_status = r.mother_status,
+              mother_job = r.mother_job,
+              phone = r.phone
+          FROM registration_requests r
+          WHERE r.username = u.username AND r.status = 'approved';
+        UPDATE users SET joined_at = COALESCE(joined_at, created_at) WHERE joined_at IS NULL;
+      `,
+    },
   ];
 
   const isNetworkErr = (err) =>

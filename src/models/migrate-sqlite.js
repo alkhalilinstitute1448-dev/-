@@ -219,6 +219,52 @@ async function migrate() {
         `);
       },
     },
+    {
+      name: '006_user_profile_fields',
+      fn: async () => {
+        const cols = [
+          'photo',
+          'first_name',
+          'nickname',
+          'father_name',
+          'father_status',
+          'father_job',
+          'mother_name',
+          'mother_status',
+          'mother_job',
+          'phone',
+          'dob',
+          'gender',
+          'joined_at',
+          'admin_notes',
+        ];
+        for (const c of cols) {
+          try {
+            await q(`ALTER TABLE users ADD COLUMN ${c} TEXT`);
+          } catch (err) {
+            console.log(`006 profile column ${c}:`, err.message);
+          }
+        }
+        try {
+          const { rows } = await q(
+            `SELECT u.id, r.photo, r.first_name, r.nickname, r.father_name, r.father_status, r.father_job,
+                    r.mother_name, r.mother_status, r.mother_job, r.phone
+             FROM registration_requests r
+             JOIN users u ON u.username = r.username
+             WHERE r.status = 'approved'`
+          );
+          for (const r of rows) {
+            await q(
+              `UPDATE users SET photo=?, first_name=?, nickname=?, father_name=?, father_status=?, father_job=?, mother_name=?, mother_status=?, mother_job=?, phone=? WHERE id=?`,
+              [r.photo, r.first_name, r.nickname, r.father_name, r.father_status, r.father_job, r.mother_name, r.mother_status, r.mother_job, r.phone, r.id]
+            );
+          }
+        } catch (err) {
+          console.log('006 backfill:', err.message);
+        }
+        await q('UPDATE users SET joined_at = COALESCE(joined_at, created_at) WHERE joined_at IS NULL');
+      },
+    },
   ];
 
   for (const m of migrations) {

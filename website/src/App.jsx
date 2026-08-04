@@ -19,12 +19,14 @@ import Assistant from './pages/Assistant';
 import Register from './pages/Register';
 import RegistrationRequests from './pages/RegistrationRequests';
 import ForcePasswordChange from './pages/ForcePasswordChange';
+import CompleteProfile from './pages/CompleteProfile';
 
 function Protected({ children, perm }) {
   const { user, can, loading } = useAuth();
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.must_change_password) return <Navigate to="/change-password" replace />;
+  if (user.role !== 'admin' && (!user.dob || !user.gender)) return <Navigate to="/complete-profile" replace />;
   if (perm && !can(perm)) return <Navigate to="/" replace />;
   return <Layout>{children}</Layout>;
 }
@@ -36,6 +38,7 @@ function RoutesView() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/register/:token" element={<Register />} />
       <Route path="/change-password" element={<ForcePasswordChange />} />
+      <Route path="/complete-profile" element={<CompleteProfile />} />
       <Route path="/" element={<Protected perm="dashboard.view"><Dashboard /></Protected>} />
       <Route path="/work" element={<Protected><Workspace /></Protected>} />
       <Route path="/profile" element={<Protected><Profile /></Protected>} />

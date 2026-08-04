@@ -101,8 +101,14 @@ export function AuthProvider({ children }) {
     [user]
   );
 
+  const updateUser = useCallback((next) => {
+    const normalized = normalizeUser(next);
+    setUser(normalized);
+    localStorage.setItem('akm_user', JSON.stringify(normalized));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, refresh, can, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, refresh, can, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

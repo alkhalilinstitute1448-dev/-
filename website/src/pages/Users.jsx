@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useData, useMutation } from '../hooks/useData';
 import api from '../api';
 import {
-  Card, Loader, PageHeader, Button, Input, Modal, Badge, Alert, EmptyState, StatCard,
+  Card, Loader, PageHeader, Button, Input, Modal, Badge, Alert, EmptyState, StatCard, Avatar, Textarea,
 } from '../components/ui';
+import ProfileForm, { profileFromUser } from '../components/ProfileForm';
 import { PERMISSIONS } from '../utils/permissions';
 import { useAuth } from '../context/AuthContext';
 import { formatDuration } from '../utils/time';
@@ -27,6 +28,10 @@ export default function Users() {
   const [permSelect, setPermSelect] = useState([]);
   const [resetUser, setResetUser] = useState(null);
   const [newPass, setNewPass] = useState('');
+  const [editUser, setEditUser] = useState(null);
+  const [editForm, setEditForm] = useState(() => profileFromUser(null));
+  const [editNotes, setEditNotes] = useState('');
+  const [editJoined, setEditJoined] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -79,6 +84,19 @@ export default function Users() {
     if (r.ok) { setResetUser(null); setNewPass(''); } else setError(r.error);
   };
 
+  const openEdit = (u) => {
+    setEditUser(u);
+    setEditForm(profileFromUser(u));
+    setEditNotes(u.admin_notes || '');
+    setEditJoined(u.joined_at ? String(u.joined_at).slice(0, 10) : '');
+    setError('');
+  };
+
+  const saveEdit = async () => {
+    const r = await run(() => api.put(`/users/${editUser.id}`, { ...editForm, admin_notes: editNotes, joined_at: editJoined }));
+    if (r.ok) { setEditUser(null); reload(); } else setError(r.error);
+  };
+
   const stats = {
     inRoom: (presence.data || []).filter((p) => p.status === 'in_room').length,
     online: (presence.data || []).filter((p) => p.status === 'online').length,
@@ -112,12 +130,7 @@ export default function Users() {
             <Card key={u.id} className="p-5" hover>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                      {u.name?.charAt(0)}
-                    </div>
-                    <span className={`absolute -bottom-0.5 -left-0.5 w-4 h-4 rounded-full border-2 border-navy-900 ${meta.dot}`} />
-                  </div>
+                  <Avatar user={u} size="lg" statusDot dotClass={meta.dot} />
                   <div>
                     <p className="font-semibold text-white">{u.name}</p>
                     <p className="text-xs text-gray-500">@{u.username}</p>
@@ -160,6 +173,9 @@ export default function Users() {
               <div className="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap gap-2">
                 {isAdmin && (
                   <>
+                    <Button size="sm" variant="secondary" onClick={() => openEdit(u)}>
+                      الملف الشخصي
+                    </Button>
                     <Button size="sm" variant="secondary" onClick={() => { setPermUser(u); setPermSelect(u.permissions || []); }}>
                       الصلاحيات
                     </Button>
@@ -239,6 +255,29 @@ export default function Users() {
           <Button onClick={resetPass} disabled={mut || !newPass}>{mut ? '...' : 'حفظ'}</Button>
         </>}>
         <Input label="كلمة المرور الجديدة" type="password" hint="٦ أحرف على الأقل" value={newPass} onChange={(e) => setNewPass(e.target.value)} />
+      </Modal>
+
+      <Modal open={!!editUser} title={`الملف الشخصي: ${editUser?.name}`} onClose={() => setEditUser(null)} wide
+        footer={<>
+          <Button variant="ghost" onClick={() => setEditUser(null)}>إلغاء</Button>
+          <Button onClick={saveEdit} disabled={mut}>{mut ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}</Button>
+        </>}>
+        {error && <div className="mb-4"><Alert type="error">{error}</Alert></div>}
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Avatar user={editUser} size="xl" />
+            <div className="min-w-0">
+              <p className="font-bold text-white">{editUser?.name}</p>
+              <p className="text-xs text-gray-500">@{editUser?.username}</p>
+            </div>
+          </div>
+          <ProfileForm form={editForm} setForm={setEditForm} />
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Input label="تاريخ الانضمام" type="date" value={editJoined} onChange={(e) => setEditJoined(e.target.value)} />
+          </div>
+          <Textarea label="ملاحظات الإدارة (لا يراها العضو)" rows={4} value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
+            placeholder="ملاحظات داخلية مرئية للمدير فقط..." />
+        </div>
       </Modal>
     </>
   );

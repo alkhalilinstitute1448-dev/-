@@ -134,10 +134,29 @@ router.post('/:id/approve', verifyToken, requirePermission('registrations.manage
     const password = generateStrongPassword();
     const hash = await bcrypt.hash(password, 10);
     const inserted = await query(
-      `INSERT INTO users (name, username, password_hash, role, permissions, must_change_password)
-       VALUES ($1,$2,$3,$4,$5, TRUE)
+      `INSERT INTO users (name, username, password_hash, role, permissions, must_change_password,
+        first_name, nickname, father_name, father_status, father_job,
+        mother_name, mother_status, mother_job, phone, photo, joined_at)
+       VALUES ($1,$2,$3,$4,$5, TRUE, $6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING id, name, username`,
-      [fullName, username, hash, 'user', JSON.stringify(DEFAULT_MEMBER_PERMISSIONS)]
+      [
+        fullName,
+        username,
+        hash,
+        'user',
+        JSON.stringify(DEFAULT_MEMBER_PERMISSIONS),
+        pending.first_name,
+        pending.nickname,
+        pending.father_name,
+        pending.father_status,
+        pending.father_job,
+        pending.mother_name,
+        pending.mother_status,
+        pending.mother_job,
+        pending.phone,
+        pending.photo,
+        new Date().toISOString(),
+      ]
     );
     await query("UPDATE registration_requests SET status='approved', username=$1, approved_by=$2 WHERE id=$3", [
       username,

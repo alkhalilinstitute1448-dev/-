@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../hooks/useData';
 import api from '../api';
-import { Card, Loader, PageHeader, Button, Badge, EmptyState, StatCard } from '../components/ui';
+import { Card, Loader, PageHeader, Button, Badge, EmptyState, StatCard, Avatar } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useSession } from '../context/SessionContext';
 import { formatDuration } from '../utils/time';
@@ -205,12 +205,7 @@ export default function Dashboard() {
               const meta = PRESENCE_META[m.status] || PRESENCE_META.offline;
               return (
                 <div key={m.id} className="glass rounded-2xl p-4 flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-royal-500 to-indigo-600 flex items-center justify-center text-white font-bold">
-                      {m.name?.charAt(0)}
-                    </div>
-                    <span className={`absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full border-2 border-navy-900 ${meta.dot}`} />
-                  </div>
+                  <Avatar user={m} size="md" statusDot dotClass={meta.dot} />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{m.name}</p>
                     <p className="text-[11px] text-gray-500">{meta.label}</p>
