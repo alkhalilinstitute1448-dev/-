@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SessionProvider } from './context/SessionContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
 import BackendStatus from './components/BackendStatus';
 import useKeepAlive from './hooks/useKeepAlive';
@@ -12,6 +13,7 @@ import Workspace from './pages/Workspace';
 import Profile from './pages/Profile';
 import Attendance from './pages/Attendance';
 import Tasks from './pages/Tasks';
+import TaskRequests from './pages/TaskRequests';
 import Lessons from './pages/Lessons';
 import Captions from './pages/Captions';
 import Reports from './pages/Reports';
@@ -46,6 +48,7 @@ function RoutesView() {
       <Route path="/profile" element={<Protected><Profile /></Protected>} />
       <Route path="/attendance" element={<Protected perm="attendance.view"><Attendance /></Protected>} />
       <Route path="/tasks" element={<Protected perm="tasks.view"><Tasks /></Protected>} />
+      <Route path="/task-requests" element={<Protected perm="task_requests.view"><TaskRequests /></Protected>} />
       <Route path="/lessons" element={<Protected perm="lessons.view"><Lessons /></Protected>} />
       <Route path="/captions" element={<Protected perm="captions.view"><Captions /></Protected>} />
       <Route path="/reports" element={<Protected perm="reports.view"><Reports /></Protected>} />
@@ -68,9 +71,11 @@ export default function App() {
     <AuthProvider>
       <KeepAlive />
       <SessionProvider>
-        <BrowserRouter>
-          <RoutesView />
-        </BrowserRouter>
+        <NotificationProvider>
+          <BrowserRouter>
+            <RoutesView />
+          </BrowserRouter>
+        </NotificationProvider>
       </SessionProvider>
     </AuthProvider>
   );

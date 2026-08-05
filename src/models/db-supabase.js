@@ -318,6 +318,40 @@ async function migrate() {
         UPDATE users SET joined_at = COALESCE(joined_at, created_at) WHERE joined_at IS NULL;
       `,
     },
+    {
+      name: '012_task_requests',
+      sql: `
+        CREATE TABLE IF NOT EXISTS task_requests (
+          id SERIAL PRIMARY KEY,
+          title TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          type TEXT NOT NULL DEFAULT 'other' CHECK (type IN ('design','editing','live','filming','writing','management','other')),
+          priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','important','urgent')),
+          status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','in_progress','in_review','completed','rejected')),
+          due_date TIMESTAMPTZ,
+          assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          delivery_note TEXT DEFAULT '',
+          delivery_attachment TEXT DEFAULT '',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+        );
+        CREATE TABLE IF NOT EXISTS notifications (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          title TEXT NOT NULL,
+          body TEXT DEFAULT '',
+          type TEXT NOT NULL DEFAULT 'task_request',
+          read BOOLEAN NOT NULL DEFAULT FALSE,
+          link TEXT DEFAULT '',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_task_requests_assigned ON task_requests(assigned_to);
+        CREATE INDEX IF NOT EXISTS idx_task_requests_status ON task_requests(status);
+        CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read);
+      `,
+    },
   ];
 
   const isNetworkErr = (err) =>

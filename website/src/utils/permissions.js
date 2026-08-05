@@ -4,6 +4,8 @@ export const PERMISSIONS = [
   { key: 'users.manage', label: 'إدارة المستخدمين' },
   { key: 'tasks.view', label: 'عرض المهام' },
   { key: 'tasks.manage', label: 'إدارة المهام' },
+  { key: 'task_requests.view', label: 'عرض طلبات المهام' },
+  { key: 'task_requests.manage', label: 'إنشاء طلبات المهام' },
   { key: 'lessons.view', label: 'عرض الدروس' },
   { key: 'lessons.manage', label: 'إدارة الدروس' },
   { key: 'attendance.view', label: 'عرض الحضور' },

@@ -5,6 +5,7 @@ import { useSession } from '../context/SessionContext';
 import { Button, Avatar } from './ui';
 import Logo from './Logo';
 import BackendStatus from './BackendStatus';
+import NotificationBell from './NotificationBell';
 
 const NAV = [
   { to: '/', key: 'dashboard.view', icon: '◈', label: 'لوحة التحكم', end: true },
@@ -13,6 +14,7 @@ const NAV = [
   { to: '/registrations', key: 'registrations.view', icon: '✉', label: 'طلبات التسجيل' },
   { to: '/attendance', key: 'attendance.view', icon: '◷', label: 'الحضور والانصراف' },
   { to: '/tasks', key: 'tasks.view', icon: '✓', label: 'المهام' },
+  { to: '/task-requests', key: 'task_requests.view', icon: '⇉', label: 'طلبات المهام' },
   { to: '/lessons', key: 'lessons.view', icon: '▤', label: 'الدروس' },
   { to: '/captions', key: 'captions.view', icon: '❝', label: 'الكابشنات' },
   { to: '/reports', key: 'reports.view', icon: '☰', label: 'التقارير' },
@@ -115,6 +117,7 @@ export default function Layout({ children }) {
               {statusLabel}
             </span>
           </div>
+          <NotificationBell />
           <Avatar user={user} size="sm" statusDot dotClass={status === 'in_room' ? 'bg-emerald-400' : 'bg-gray-600'} />
         </header>
 

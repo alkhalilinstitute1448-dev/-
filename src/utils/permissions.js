@@ -4,6 +4,8 @@ const PERMISSIONS = {
   'users.manage': 'إدارة المستخدمين',
   'tasks.view': 'عرض المهام',
   'tasks.manage': 'إدارة المهام',
+  'task_requests.view': 'عرض طلبات المهام',
+  'task_requests.manage': 'إنشاء طلبات المهام',
   'lessons.view': 'عرض الدروس',
   'lessons.manage': 'إدارة الدروس',
   'attendance.view': 'عرض الحضور',

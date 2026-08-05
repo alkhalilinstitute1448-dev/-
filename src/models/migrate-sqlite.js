@@ -265,6 +265,41 @@ async function migrate() {
         await q('UPDATE users SET joined_at = COALESCE(joined_at, created_at) WHERE joined_at IS NULL');
       },
     },
+    {
+      name: '007_task_requests',
+      fn: async () => {
+        await q(`
+          CREATE TABLE IF NOT EXISTS task_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            type TEXT NOT NULL DEFAULT 'other',
+            priority TEXT NOT NULL DEFAULT 'normal',
+            status TEXT NOT NULL DEFAULT 'new',
+            due_date TEXT,
+            assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            delivery_note TEXT DEFAULT '',
+            delivery_attachment TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+          )
+        `);
+        await q(`
+          CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            body TEXT DEFAULT '',
+            type TEXT NOT NULL DEFAULT 'task_request',
+            read INTEGER NOT NULL DEFAULT 0,
+            link TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          )
+        `);
+      },
+    },
   ];
 
   for (const m of migrations) {
