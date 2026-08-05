@@ -8,7 +8,7 @@ const router = express.Router();
 
 const USER_COLUMNS =
   'id, name, username, role, permissions, active, created_at, joined_at, photo, dob, gender, ' +
-  'first_name, nickname, father_name, father_status, father_job, mother_name, mother_status, mother_job, phone, admin_notes';
+  'first_name, nickname, father_name, father_status, father_job, mother_name, mother_status, mother_job, phone, admin_notes, admin_only_assignment';
 
 router.get('/', verifyToken, requirePermission('users.view'), async (req, res) => {
   try {
@@ -53,7 +53,7 @@ router.post('/', verifyToken, requirePermission('users.manage'), async (req, res
 });
 
 router.put('/:id', verifyToken, requirePermission('users.manage'), async (req, res) => {
-  const { name, role, active, joined_at, admin_notes } = req.body;
+  const { name, role, active, joined_at, admin_notes, admin_only_assignment } = req.body;
   const profile = pickProfile(req.body);
   const errMsg = validateProfile(req.body);
   if (errMsg) return res.status(400).json({ error: errMsg });
@@ -69,6 +69,7 @@ router.put('/:id', verifyToken, requirePermission('users.manage'), async (req, r
     if (active !== undefined) add('active', active === false ? false : true);
     if (joined_at !== undefined) add('joined_at', joined_at || null);
     if (req.user.role === 'admin' && admin_notes !== undefined) add('admin_notes', admin_notes || null);
+    if (req.user.role === 'admin' && admin_only_assignment !== undefined) add('admin_only_assignment', admin_only_assignment === true);
     if (profile.first_name !== undefined || profile.nickname !== undefined) {
       const { rows: cur } = await query('SELECT first_name, nickname FROM users WHERE id = $1', [req.params.id]);
       const base = cur[0] || {};

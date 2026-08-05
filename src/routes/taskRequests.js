@@ -42,6 +42,12 @@ function scopeFilter(user) {
   return user.role === 'admin' ? '1=1' : 'tr.assigned_to = $1';
 }
 
+async function ensureAssignable(user, assignedId) {
+  if (!assignedId || user.role === 'admin') return true;
+  const { rows } = await query('SELECT admin_only_assignment FROM users WHERE id = $1', [assignedId]);
+  return !(rows[0]?.admin_only_assignment);
+}
+
 router.get('/', requirePermission('task_requests.view'), async (req, res) => {
   const { status, member, q } = req.query;
   try {
@@ -75,8 +81,12 @@ router.get('/', requirePermission('task_requests.view'), async (req, res) => {
 
 router.get('/members', requirePermission('task_requests.view'), async (req, res) => {
   try {
+    const isAdmin = req.user.role === 'admin';
     const { rows } = await query(
-      "SELECT id, name, username, role, phone FROM users WHERE active = TRUE ORDER BY role = 'admin' DESC, name"
+      `SELECT id, name, username, role, phone, admin_only_assignment
+       FROM users
+       WHERE active = TRUE${isAdmin ? '' : ' AND admin_only_assignment = FALSE'}
+       ORDER BY role = 'admin' DESC, name`
     );
     res.json(rows);
   } catch (err) {
@@ -123,6 +133,9 @@ router.post('/', requirePermission('task_requests.manage'), async (req, res) => 
 
     const link = '/task-requests';
     const assignedId = assigned_to ? Number(assigned_to) : null;
+    if (assignedId && !(await ensureAssignable(req.user, assignedId))) {
+      return res.status(403).json({ error: 'لا يمكن إسناد المهمة إلى هذا الحساب — المدير وحده يمكنه إسناد المهام إليه' });
+    }
     if (assignedId) {
       await createNotification({
         userId: assignedId,
@@ -162,6 +175,10 @@ router.put('/:id', requirePermission('task_requests.manage'), async (req, res) =
     const { rows: cur } = await query('SELECT * FROM task_requests WHERE id = $1', [req.params.id]);
     if (!cur.length) return res.status(404).json({ error: 'الطلب غير موجود' });
     const task = cur[0];
+
+    if (assigned_to !== undefined && !(await ensureAssignable(req.user, Number(assigned_to) || null))) {
+      return res.status(403).json({ error: 'لا يمكن إسناد المهمة إلى هذا الحساب — المدير وحده يمكنه إسناد المهام إليه' });
+    }
 
     const sets = [];
     const values = [];

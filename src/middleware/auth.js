@@ -17,7 +17,7 @@ async function verifyToken(req, res, next) {
     const decoded = jwt.verify(header.split(' ')[1], JWT_SECRET);
     const { rows } = await query(
       `SELECT id, name, username, role, permissions, active, must_change_password, created_at,
-              photo, dob, gender, joined_at, admin_notes,
+              photo, dob, gender, joined_at, admin_notes, admin_only_assignment,
               first_name, nickname, father_name, father_status, father_job,
               mother_name, mother_status, mother_job, phone
        FROM users WHERE id = $1`,

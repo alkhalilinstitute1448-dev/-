@@ -4,6 +4,7 @@ import api from '../api';
 import { Card, Loader, PageHeader, Button, Input, Modal, Badge, Alert, EmptyState, Select, Textarea, StatCard } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import { useSession } from '../context/SessionContext';
 
 const TYPE = {
   design: { label: 'تصميم', color: 'indigo' },
@@ -47,6 +48,7 @@ function formatDate(iso) {
 export default function TaskRequests() {
   const { user, can } = useAuth();
   const { taskCounts, refreshCounts } = useNotifications();
+  const { showToast } = useSession();
   const canManage = can('task_requests.manage');
   const isAdmin = user?.role === 'admin';
 
@@ -108,10 +110,15 @@ export default function TaskRequests() {
       setModal(null);
       reload();
       refreshCounts();
+      const assignedSelf = form.assigned_to && Number(form.assigned_to) === user?.id;
       if (modal === 'new' && r.data?.whatsapp) {
         const wa = r.data.whatsapp;
+        const waWin = window.open('', '_blank');
         const url = `https://wa.me/${wa.phone}?text=${encodeURIComponent(wa.message)}`;
-        window.open(url, '_blank');
+        if (waWin) waWin.location = url;
+        else window.location.href = url;
+      } else if (modal === 'new' && form.assigned_to && !assignedSelf) {
+        showToast('هذا العضو لا يملك رقم هاتف مسجل', 'info');
       }
     } else {
       setError(r.error);
@@ -274,12 +281,15 @@ export default function TaskRequests() {
             <option value="">— لم يُحدد —</option>
             {people.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.role === 'admin' ? 'مدير النظام' : `${m.name}${m.phone ? ' ✓' : ''}`}
+                {m.role === 'admin'
+                  ? 'مدير النظام'
+                  : `${m.name}${m.phone ? ' ✓' : ''}${m.admin_only_assignment ? ' (المدير فقط)' : ''}`}
               </option>
             ))}
           </Select>
           <p className="text-xs text-gray-600">
-            يمكنك إسناد المهمة إلى "مدير النظام" ليوزعها لاحقاً. إذا كان لدى العضو رقم هاتف، سيُفتح واتساب برسالة جاهزة بعد الإرسال.
+            يمكنك إسناد المهمة إلى "مدير النظام" ليوزعها لاحقاً. إذا كان لدى العضو رقم هاتف، ستُتاح رسالة واتساب جاهزة بعد الإرسال؛
+            أما من لا يملك رقم هاتف مسجل فستظهر رسالة تنبيه بدلاً من ذلك.
           </p>
           {modal === 'edit' && (
           <Select label="الحالة" value={form.status} onChange={(e) => { setForm({ ...form, status: e.target.value }); }}>

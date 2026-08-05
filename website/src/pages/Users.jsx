@@ -32,6 +32,7 @@ export default function Users() {
   const [editForm, setEditForm] = useState(() => profileFromUser(null));
   const [editNotes, setEditNotes] = useState('');
   const [editJoined, setEditJoined] = useState('');
+  const [editAdminOnly, setEditAdminOnly] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -89,11 +90,12 @@ export default function Users() {
     setEditForm(profileFromUser(u));
     setEditNotes(u.admin_notes || '');
     setEditJoined(u.joined_at ? String(u.joined_at).slice(0, 10) : '');
+    setEditAdminOnly(!!u.admin_only_assignment);
     setError('');
   };
 
   const saveEdit = async () => {
-    const r = await run(() => api.put(`/users/${editUser.id}`, { ...editForm, admin_notes: editNotes, joined_at: editJoined }));
+    const r = await run(() => api.put(`/users/${editUser.id}`, { ...editForm, admin_notes: editNotes, joined_at: editJoined, admin_only_assignment: editAdminOnly }));
     if (r.ok) { setEditUser(null); reload(); } else setError(r.error);
   };
 
@@ -275,6 +277,11 @@ export default function Users() {
           <div className="grid sm:grid-cols-2 gap-4">
             <Input label="تاريخ الانضمام" type="date" value={editJoined} onChange={(e) => setEditJoined(e.target.value)} />
           </div>
+          <label className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-navy-900/70 border border-white/10 text-sm text-gray-300 hover:text-gray-100 cursor-pointer transition-colors">
+            <input type="checkbox" className="accent-royal-500 w-4 h-4" checked={editAdminOnly}
+              onChange={(e) => setEditAdminOnly(e.target.checked)} />
+            <span>☑ يمكن استقبال المهام من المدير فقط (يُخفى من قائمة إسناد المهام للمستخدمين غير المدير)</span>
+          </label>
           <Textarea label="ملاحظات الإدارة (لا يراها العضو)" rows={4} value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
             placeholder="ملاحظات داخلية مرئية للمدير فقط..." />
         </div>

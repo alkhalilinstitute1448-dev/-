@@ -300,6 +300,16 @@ async function migrate() {
         `);
       },
     },
+    {
+      name: '008_admin_only_assignment',
+      fn: async () => {
+        try {
+          await q('ALTER TABLE users ADD COLUMN admin_only_assignment INTEGER NOT NULL DEFAULT 0');
+        } catch (err) {
+          console.log('admin_only_assignment column:', err.message);
+        }
+      },
+    },
   ];
 
   for (const m of migrations) {

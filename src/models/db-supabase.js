@@ -352,6 +352,12 @@ async function migrate() {
         CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read);
       `,
     },
+    {
+      name: '013_admin_only_assignment',
+      sql: `
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_only_assignment BOOLEAN NOT NULL DEFAULT FALSE;
+      `,
+    },
   ];
 
   const isNetworkErr = (err) =>
