@@ -22,6 +22,7 @@ import Users from './pages/Users';
 import Assistant from './pages/Assistant';
 import Register from './pages/Register';
 import RegistrationRequests from './pages/RegistrationRequests';
+import TeamItems from './pages/TeamItems';
 import ForcePasswordChange from './pages/ForcePasswordChange';
 import CompleteProfile from './pages/CompleteProfile';
 
@@ -56,6 +57,7 @@ function RoutesView() {
       <Route path="/users" element={<Protected perm="users.view"><Users /></Protected>} />
       <Route path="/registrations" element={<Protected perm="registrations.view"><RegistrationRequests /></Protected>} />
       <Route path="/assistant" element={<Protected perm="assistant.view"><Assistant /></Protected>} />
+      <Route path="/team-items" element={<Protected perm="team_items.view"><TeamItems /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

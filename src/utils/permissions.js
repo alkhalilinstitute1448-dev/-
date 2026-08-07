@@ -17,6 +17,8 @@ const PERMISSIONS = {
   'assistant.view': 'المساعد الذكي',
   'registrations.view': 'عرض طلبات التسجيل',
   'registrations.manage': 'إدارة طلبات التسجيل',
+  'team_items.view': 'عرض أغراض الفريق',
+  'team_items.manage': 'إدارة أغراض الفريق',
 };
 
 function hasPermission(user, perm) {

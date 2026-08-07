@@ -310,6 +310,23 @@ async function migrate() {
         }
       },
     },
+    {
+      name: '009_team_items',
+      fn: async () => {
+        await q(`
+          CREATE TABLE IF NOT EXISTS team_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            photo TEXT,
+            description TEXT DEFAULT '',
+            created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+          )
+        `);
+        await q('CREATE INDEX IF NOT EXISTS idx_team_items_name ON team_items(name)');
+      },
+    },
   ];
 
   for (const m of migrations) {

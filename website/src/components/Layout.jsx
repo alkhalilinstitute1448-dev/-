@@ -20,6 +20,7 @@ const NAV = [
   { to: '/reports', key: 'reports.view', icon: '☰', label: 'التقارير' },
   { to: '/archive', key: 'archive.view', icon: '▣', label: 'الأرشيف' },
   { to: '/assistant', key: 'assistant.view', icon: '✦', label: 'المساعد الذكي' },
+  { to: '/team-items', key: 'team_items.view', icon: '▧', label: 'أغراض الفريق' },
 ];
 
 export default function Layout({ children }) {

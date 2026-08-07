@@ -17,6 +17,8 @@ export const PERMISSIONS = [
   { key: 'assistant.view', label: 'المساعد الذكي' },
   { key: 'registrations.view', label: 'عرض طلبات التسجيل' },
   { key: 'registrations.manage', label: 'إدارة طلبات التسجيل' },
+  { key: 'team_items.view', label: 'عرض أغراض الفريق' },
+  { key: 'team_items.manage', label: 'إدارة أغراض الفريق' },
 ];
 
 export function permissionLabel(key) {

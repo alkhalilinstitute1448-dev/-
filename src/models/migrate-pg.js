@@ -219,6 +219,21 @@ async function migrate() {
         );
       `,
     },
+    {
+      name: '014_team_items',
+      sql: `
+        CREATE TABLE IF NOT EXISTS team_items (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          photo TEXT,
+          description TEXT DEFAULT '',
+          created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_team_items_name ON team_items(name);
+      `,
+    },
   ];
 
   for (const m of migrations) {

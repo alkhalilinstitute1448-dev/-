@@ -32,7 +32,7 @@ async function fileToDataUrl(file) {
   return canvas.toDataURL('image/jpeg', QUALITY);
 }
 
-export default function PhotoPicker({ value, onChange }) {
+export default function PhotoPicker({ value, onChange, hint = 'صورة شخصية واضحة — تُعرض على إدارة النظام للموافقة على الطلب' }) {
   const fileRef = useRef(null);
   const cameraRef = useRef(null);
 
@@ -85,7 +85,7 @@ export default function PhotoPicker({ value, onChange }) {
       </div>
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-      <p className="text-xs text-gray-600">صورة شخصية واضحة — تُعرض على إدارة النظام للموافقة على الطلب</p>
+      <p className="text-xs text-gray-600">{hint}</p>
     </div>
   );
 }

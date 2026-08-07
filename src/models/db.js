@@ -58,7 +58,10 @@ if (USE_SUPABASE) {
   }
 
   function toSqlite(sql) {
-    return sql.replace(/\$(\d+)/g, () => '?');
+    return sql
+      .replace(/\$(\d+)/g, () => '?')
+      .replace(/NOW\(\)/g, "datetime('now')")
+      .replace(/CURRENT_DATE/g, "date('now')");
   }
 
   query = async (sql, params) => {

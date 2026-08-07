@@ -21,6 +21,7 @@ const reportRoutes = require('./routes/reports');
 const archiveRoutes = require('./routes/archive');
 const assistantRoutes = require('./routes/assistant');
 const registrationRoutes = require('./routes/registrations');
+const teamItemRoutes = require('./routes/teamItems');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -35,6 +36,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/archive', archiveRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/registrations', registrationRoutes);
+app.use('/api/team-items', teamItemRoutes);
 
 app.get('/api/connection-status', async (req, res) => {
   try {
